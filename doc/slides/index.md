@@ -1,164 +1,170 @@
-- title : FsReveal
-- description : Introduction to FsReveal
-- author : Karlkim Suwanmongkol
-- theme : night
+- title :  Software Hollywood style: Don't call us, we'll call you
+- description : Reactive Extensions in .NET
+- author : Milosz Krajewski
+- theme : beige
 - transition : default
 
 ***
 
-### What is FsReveal?
+### Software Hollywood style:
+### Don't call us, we'll call you
 
-- Generates [reveal.js](http://lab.hakim.se/reveal-js/#/) presentation from [markdown](http://daringfireball.net/projects/markdown/)
-- Utilizes [FSharp.Formatting](https://github.com/tpetricek/FSharp.Formatting) for markdown parsing
-- Get it from [http://fsprojects.github.io/FsReveal/](http://fsprojects.github.io/FsReveal/)
+![Eveything is a stream](images/dog-stream.jpeg)
 
-![FsReveal](images/logo.png)
-
-***
-
-### Reveal.js
-
-- A framework for easily creating beautiful presentations using HTML.
-
-
-> **Atwood's Law**: any application that can be written in JavaScript, will eventually be written in JavaScript.
+#### gentle introduction to Reactive Extensions
 
 ***
 
-### FSharp.Formatting
+### About me
 
-- F# tools for generating documentation (Markdown processor and F# code formatter).
-- It parses markdown and F# script file and generates HTML or PDF.
-- Code syntax highlighting support.
-- It also evaluates your F# code and produce tooltips.
-
-***
-
-### Syntax Highlighting
-
-#### F# (with tooltips)
-
-    let a = 5
-    let factorial x = [1..x] |> List.reduce (*)
-    let c = factorial a
-
----
-
-#### C#
-
-    [lang=cs]
-    using System;
-
-    class Program
-    {
-        static void Main()
-        {
-            Console.WriteLine("Hello, world!");
-        }
-    }
-
----
-
-#### JavaScript
-
-    [lang=js]
-    function copyWithEvaluation(iElem, elem) {
-        return function (obj) {
-            var newObj = {};
-            for (var p in obj) {
-                var v = obj[p];
-                if (typeof v === "function") {
-                    v = v(iElem, elem);
-                }
-                newObj[p] = v;
-            }
-            if (!newObj.exactTiming) {
-                newObj.delay += exports._libraryDelay;
-            }
-            return newObj;
-        };
-    }
-
-
----
-
-#### Haskell
- 
-    [lang=haskell]
-    recur_count k = 1 : 1 : 
-        zipWith recurAdd (recur_count k) (tail (recur_count k))
-            where recurAdd x y = k * x + y
-
-    main = do
-      argv <- getArgs
-      inputFile <- openFile (head argv) ReadMode
-      line <- hGetLine inputFile
-      let [n,k] = map read (words line)
-      printf "%d\n" ((recur_count k) !! (n-1))
-
-*code from [NashFP/rosalind](https://github.com/NashFP/rosalind/blob/master/mark_wutka%2Bhaskell/FIB/fib_ziplist.hs)*
-
----
-
-### SQL
-
-    [lang=sql]
-    select *
-    from
-    (select 1 as Id union all select 2 union all select 3) as X
-    where Id in (@Ids1, @Ids2, @Ids3)
-
-*sql from [Dapper](https://code.google.com/p/dapper-dot-net/)*
-
----
-
-### Paket
-
-    [lang=paket]
-    source https://nuget.org/api/v2
-
-    nuget Castle.Windsor-log4net >= 3.2
-    nuget NUnit
-    
-    github forki/FsUnit FsUnit.fs
-      
----
-
-### C/AL
-
-    [lang=cal]
-    PROCEDURE FizzBuzz(n : Integer) r_Text : Text[1024];
-    VAR
-      l_Text : Text[1024];
-    BEGIN
-      r_Text := '';
-      l_Text := FORMAT(n);
-
-      IF (n MOD 3 = 0) OR (STRPOS(l_Text,'3') > 0) THEN
-        r_Text := 'Fizz';
-      IF (n MOD 5 = 0) OR (STRPOS(l_Text,'5') > 0) THEN
-        r_Text := r_Text + 'Buzz';
-      IF r_Text = '' THEN
-        r_Text := l_Text;
-    END;
+- Milosz Krajewski
+- BLOBAs @ Sepura
+- first line of code written in ~1984
+- C, C++, C#, SQL, Java
+- (Iron)Python, F#, Scala, Kotlin
 
 ***
 
-**Bayes' Rule in LaTeX**
+So what is `Observable<T>`?
 
-$ \Pr(A|B)=\frac{\Pr(B|A)\Pr(A)}{\Pr(B|A)\Pr(A)+\Pr(B|\neg A)\Pr(\neg A)} $
+Some say it is:
+
+* kind of `Enumerable<T>`
+* similar to `Task<T>`
+
+---
+
+### Dual
+
+Function f(x) is dual to g(y) if f(x) = y g(y) = x
+
+---
+
+```csharp
+int Parse(string);
+string Render(int);
+```
+
+```csharp
+byte[] Serialize(T);
+T Deserialize(byte[] x);
+```
+
+```csharp
+void Consume(T);
+T Produce(void);
+```
+---
+
+```csharp
+interface IEnumerable<T> {
+    IEnumerator<T> GetEnumerator();
+}
+
+interface IEnumerable<T> {
+    IEnumerator<T> GetEnumerator(void);
+}
+```
+
+---
+
+```csharp
+interface IEnumerator<T> {
+    bool MoveNext();
+    T Current { get; }
+}
+```
+
+```csharp
+interface IEnumerator<T> {
+    bool|Exception MoveNext(void);
+    T GetCurrent(void);
+}
+```
+
+```csharp
+interface IEnumerator<T> {
+    T|void|Exception Pull(void);
+    // Either[Option[T], Exception]
+}
+```
+
+---
+
+### Magic!
+
+![magic hat](images/magic-hat.jpg)
+
+* Swap inputs and outputs
+* Use opposite terms
+
+---
+
+```csharp
+interface IEnumerable<T> {
+    IEnumerator<T> GetEnumerator(void);
+}
+
+interface IObservable<T> {
+    void SetObserver(IObserver<T>);
+}
+```
+
+---
+
+```csharp
+interface IEnumerator<T> {
+    T|void|Exception Pull(void);
+}
+
+interface IObserver<T> {
+    void Push(T|void|Exception);
+}
+```
+
+---
+
+```csharp
+interface IObservable<T> {
+    void SetObserver(IObserver<T>);
+}
+```
+
+```csharp
+interface IObservable<T> {
+    void Subscribe(IObserver<T>);
+}
+```
+
+---
+
+```csharp
+interface IObserver<T> {
+    void Push(T|void|Exception);
+}
+```
+
+```csharp
+interface IObserver<T> {
+    void OnNext(T);
+    void OnComplete(void);
+    void OnError(Exception);
+}
+```
+
+|                    | One       | Many            |
+|-------------------:|:---------:|:---------------:|
+| **Synchronously**  | `T`       | `Enumerable<T>` |
+| **Asynchronously** | `Task<T>` | `Observable<T>` |
 
 ***
 
-### The Reality of a Developer's Life 
+### http://reactivex.io
 
-**When I show my boss that I've fixed a bug:**
-  
-![When I show my boss that I've fixed a bug](http://www.topito.com/wp-content/uploads/2013/01/code-07.gif)
-  
-**When your regular expression returns what you expect:**
-  
-![When your regular expression returns what you expect](http://www.topito.com/wp-content/uploads/2013/01/code-03.gif)
-  
-*from [The Reality of a Developer's Life - in GIFs, Of Course](http://server.dzone.com/articles/reality-developers-life-gifs)*
+**Bart de Smet** @ DevCamp 2010<br>
+"Rx: Curing your asynchronous programming blues"<br>
+http://bit.ly/1qsXfsx
 
+**Mike Taulty** @ DevDays 2011<br>
+"Reactive Extensions for .NET for the Rest of Us"<br>
+http://bit.ly/1PSoukV
