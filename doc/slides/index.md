@@ -9,7 +9,7 @@
 ### Software Hollywood style:
 ### Don't call us, we'll call you
 
-![Eveything is a stream](images/dog-stream.jpeg)
+![Eveything is a stream](images/dog-stream.jpg)
 
 #### gentle introduction to Reactive Extensions
 
@@ -29,14 +29,19 @@ So what is `Observable<T>`?
 
 Some say it is:
 
-* kind of `Enumerable<T>`
+* dual ('opposite') to `Enumerable<T>`
 * similar to `Task<T>`
+* also an `EventHandler<T>`
 
 ---
 
-### Dual
+### Duality
 
-Function f(x) is dual to g(y) if f(x) = y g(y) = x
+> Function **$f(x)$** is dual to **$g(x)$** if **$g(f(x)) = x$**
+
+for example:
+
+**$f(x) = x\times7$** and **$g(x) = x/7$** are dual.
 
 ---
 
@@ -46,13 +51,13 @@ string Render(int);
 ```
 
 ```csharp
-byte[] Serialize(T);
-T Deserialize(byte[] x);
+byte[] Serialize<T>(T);
+T Deserialize<T>(byte[]);
 ```
 
 ```csharp
-void Consume(T);
-T Produce(void);
+void Consume<T>(T);
+T Produce<T>(void);
 ```
 ---
 
@@ -84,7 +89,7 @@ interface IEnumerator<T> {
 
 ```csharp
 interface IEnumerator<T> {
-    T|void|Exception Pull(void);
+    T|void|Exception GetNext(void);
     // Either[Option[T], Exception]
 }
 ```
@@ -104,7 +109,9 @@ interface IEnumerator<T> {
 interface IEnumerable<T> {
     IEnumerator<T> GetEnumerator(void);
 }
+```
 
+```csharp
 interface IObservable<T> {
     void SetObserver(IObserver<T>);
 }
@@ -114,11 +121,11 @@ interface IObservable<T> {
 
 ```csharp
 interface IEnumerator<T> {
-    T|void|Exception Pull(void);
+    T|void|Exception GetNext(void);
 }
 
 interface IObserver<T> {
-    void Push(T|void|Exception);
+    void PutNext(T|void|Exception);
 }
 ```
 
@@ -140,7 +147,7 @@ interface IObservable<T> {
 
 ```csharp
 interface IObserver<T> {
-    void Push(T|void|Exception);
+    void PutNext(T|void|Exception);
 }
 ```
 
