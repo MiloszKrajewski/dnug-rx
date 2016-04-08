@@ -48,11 +48,14 @@ public interface ISubject<T> {
 
 ***
 
-## .NET events are GoF type subjects
+## .NET events are equivalent of GoF observers
 
 ```csharp
 // Subject
 public event Action<T> OnNotification; // = _ => {};
+
+// Observer.OnNotification(item)
+public void OnNotificationHandler(T item) { ... }
 
 // Subject.Subscribe(Observer)
 this.OnNotification += OnNotificationHandler;
@@ -62,18 +65,92 @@ this.OnNotification -= OnNotificationHandler;
 
 // Subject.Notify(item)
 this.OnNotification(item);
-
-// Observer.OnNotification(item)
-public void OnNotificationHandler(T item) { ... }
 ```
 
 ***
 
 ### What's wrong with .NET events?
 
+* Not first-class citizens (cannot pass around)
+* Clunky unsubscribe (anonymous handlers)
+* Lapsed listener problem (event handler leak)
+
 ---
 
-* not first-class citizens
+### Not first-class citizens
+
+```csharp
+public class Producer {
+	public event EventHandler<int> OnProduced;
+}
+
+void AttachPrinter(EventHandler<int> handler) {
+	handler += (s, e) => Console.WriteLine(e);
+}
+
+void Main() {
+	var producer = new Producer();
+	AttachPrinter(producer.OnProduced);
+}
+```
+
+---
+
+<pre>
+The event 'Producer.OnProduced' can only appear on the left hand
+side of += or -= (except when used from within the type 'Producer')
+</pre>
+
+---
+
+### Clunky unsubscribe
+
+```csharp
+public class Producer {
+	public event EventHandler<int> OnProduced;
+}
+
+void Main() {
+	var producer = new Producer();
+	producer.OnProduced += (s, e) => Console.WriteLine(e);
+	producer.OnProduced -= (s, e) => Console.WriteLine(e);
+}
+```
+
+---
+
+### Lapsed listener problem
+
+```csharp
+public class LeakingForm: Form {
+	public LeakingForm(EventBus bus) {
+		bus.OnEvent += (s, e) => editBox.Text = e.Text;
+	}
+}
+```
+
+(being referenced by `bus` may leak)
+
+---
+
+(explodes into...)
+
+```csharp
+public class LessLeakingForm: Form {
+    public LessLeakingForm(EventBus bus) {
+        bus.OnEvent += HandleTextEdit;
+        FormClosed += (s, e) => bus.OnEvent -= HandleTextEdit;
+    }
+    public void HandleTextEdit(object sender, TextEventArgs args) {
+        editBox.Text = args.Text;
+    }
+}
+```
+
+(now `bus` may leak even if no longer used, as we need to unsubscribe)
+
+***
+
 
 ***
 
@@ -246,25 +323,6 @@ public class IntProducer
 ```
 
 ---
-
-```csharp
-static void IntProducerDemo()
-{
-    var producer = new IntProducer();
-    AttachGenericPrinter(producer.OnProduced);
-    producer.ProduceMany(100);
-}
-
-static void AttachGenericPrinter<T>(EventHandler<T> handler)
-{
-    handler += (s, e) => Console.WriteLine(e);
-}
-```
----
-
-```
-error CS0070: The event 'BitsAndBobs.IntProducer.OnProduced' can only appear on the left hand side of += or -= (except when used from within the type 'BitsAndBobs.IntProducer')
-```
 
 ***
 
