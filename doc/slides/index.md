@@ -24,7 +24,7 @@
 
 ***
 
-## Observer Pattern
+### Observer Pattern
 
 ![Observer Pattern](images/observer-wikipedia.png)
 
@@ -48,7 +48,7 @@ public interface ISubject<T> {
 
 ***
 
-## .NET events are equivalent of GoF observers
+### .NET events are equivalent of GoF observers
 
 ```csharp
 // Subject
@@ -129,11 +129,12 @@ public class LeakingForm: Form {
 }
 ```
 
-(being referenced by `bus` may leak)
+if lifetime of `form` and `bus` is different the form will leak...
 
 ---
 
-(explodes into...)
+...to avoid that, we need to unsubscribe on close,
+but to unsubscribe we cannot use anonymous handler...
 
 ```csharp
 public class LessLeakingForm: Form {
@@ -147,36 +148,43 @@ public class LessLeakingForm: Form {
 }
 ```
 
-(now `bus` may leak even if no longer used, as we need to unsubscribe)
+...now, for a change, the `bus` may leak even if no longer used
 
 ***
 
+### So what are Reactive Extensions?
+
+> An API for asynchronous programming with observable streams. -- *reactivex.io*
+
+---
+
+when reading between the lines we get:
+
+* **observable**: Events
+* **asynchronous**: Tasks
+* **streams**: Enumerables
+
+![Everything](images/everything.png)
 
 ***
 
-### From GoF to Rx
+### Rx observables are like events
 
 ```csharp
-public interface IObserver<T> {
+public interface IObserver<T> { // GoF
     void OnNotification(T item);
 }
 ```
 
 ```csharp
-public interface IObserver<T> {
-    void OnNotification(T|void|Exception item);
-}
-```
-
-```csharp
-public interface IObserver<T> {
+public interface IObserver<T> { // Rx
     void OnNext(T item);
-    void OnComplete();
-    void OnError(Exception error);
 }
 ```
 
 ---
+
+### GoF vs Rx subjects
 
 ```csharp
 public interface ISubject<T> {
@@ -186,6 +194,9 @@ public interface ISubject<T> {
 }
 ```
 
+GoF `ISubject` is actually two interfaces,<br>
+(they missed abstraction opportunity)
+
 ```csharp
 public interface IObservable<T> {
     void Subscribe(IObserver<T> observer);
@@ -206,13 +217,20 @@ public interface IObservable<T> {
 }
 ```
 
+`Unsubscribe` is unnecessary with `IDisposable`<br>
+(and now more lambda-friendly)
+
 ```csharp
 public interface IObservable<T> {
     IDisposable Subscribe(IObserver<T> observer);
 }
 ```
 
+(and it cannot be done generically for events!)
+
 ---
+
+while `ISubject` is meant to be called...
 
 ```csharp
 public interface ISubject<T>: IObservable<T> {
@@ -220,41 +238,15 @@ public interface ISubject<T>: IObservable<T> {
 }
 ```
 
-```csharp
-public interface ISubject<T>: IObservable<T> {
-    void Notify(T|void|Exception item);
-}
-```
-
-```csharp
-public interface ISubject<T>: IObservable<T> {
-    void NotifyNext(T item);
-    void NotifyComplete();
-    void NotifyError(Exception error);
-}
-```
-
----
-
-```csharp
-public interface ISubject<T>: IObservable<T> {
-    void NotifyNext(T item);
-    void NotifyComplete();
-    void NotifyError(Exception error);
-}
-```
-
-but signatures of those methods are identical to
+...the `IObserver` is mean to be implemented...
 
 ```csharp
 public interface IObserver<T> {
     void OnNext(T item);
-    void OnComplete();
-    void OnError(Exception error);
 }
 ```
 
-therefore
+...but they are the same, therefore:
 
 ```csharp
 public interface ISubject<T>: IObservable<T>, IObserver<T> { }
@@ -262,79 +254,23 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 
 ---
 
+### Rx interfaces
+
 ```csharp
-public interface IObserver<T> {
+public interface IObserver<T> { // Action<T>
     void OnNext(T item);
-    void OnComplete();
-    void OnError(Exception error);
 }
 
-public interface IObservable<T> {
+public interface IObservable<T> { // Func<Action<T>, Action>
     IDisposable Subscribe(IObserver<T> observer);
 }
 
-public interface ISubject<T>: IObservable<T>, IObserver<T> { }
+public interface ISubject<T>: IObservable<T>, IObserver<T> {
+    // this one doesn't really exist
+}
 ```
 
 ***
-
-Observables are like .NET events<br>
-(or the other way around)
-
-```csharp
-public class IntProducer
-{
-    public event EventHandler<int> OnProduced; // Observable
-}
-```
-
-```csharp
-public class IntFactory
-{
-    public IntFactory()
-    {
-        var producer = new IntProducer();
-        producer.OnProduced += HandleProduced; // Register
-        // ...
-        producer.OnProduced -= HandleProduced; // Unregister
-    }
-
-    // Observer
-    public void HandleProduced(object sender, int item)
-    {
-        Console.WriteLine("Received: {0}", item);
-    }
-}
-```
-
----
-
-```csharp
-public class IntProducer
-{
-    public event EventHandler<int> OnProduced = (s, e) => { };
-
-    public void ProduceMany(int limit)
-    {
-        for (int i = 0; i < limit; i++)
-            OnProduced(this, i);
-    }
-}
-```
-
----
-
-***
-
-So what is `Observable<T>`?
-
-Some say it is:
-
-* dual ('opposite') to `Enumerable<T>`
-* similar to `Task<T>`
-* also an `EventHandler<T>`
-
----
 
 ### Duality
 
