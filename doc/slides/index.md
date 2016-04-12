@@ -18,6 +18,7 @@
 
 - Milosz Krajewski
 - BLOBAs @ Sepura
+- self proclaimed FRP evangelist
 - first line of code written in ~1984
 - C, C++, C#, SQL, Java, Delphi
 - (Iron)Python, F#, Scala, Kotlin
@@ -257,11 +258,15 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 ### Rx interfaces
 
 ```csharp
-public interface IObserver<T> { // Action<T>
+// Action<T>
+public interface IObserver<T> {
     void OnNext(T item);
+    // void OnComplete();
+    // void OnError(Exception);
 }
 
-public interface IObservable<T> { // Func<Action<T>, Action>
+// Func<Action<T>, Action>
+public interface IObservable<T> {
     IDisposable Subscribe(IObserver<T> observer);
 }
 
@@ -272,15 +277,26 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> {
 
 ***
 
-### Duality
+### Rx observables are 'opposite' (dual) to enumerables
 
-> Function **$f(x)$** is dual to **$g(x)$** if **$g(f(x)) = x$**
-
-for example:
-
-**$f(x) = x\times7$** and **$g(x) = x/7$** are dual.
+![Duals](images/duals.png)
 
 ---
+
+```csharp
+SheetOfPaper Print(StreamOfBytes);
+```
+
+![Scanner/Printer](images/scanner-printer.jpg)
+
+```csharp
+StreamOfBytes Scan(SheetOfPaper);
+```
+
+---
+
+* Swap inputs and outputs
+* Use opposite terms
 
 ```csharp
 int Parse(string);
@@ -302,9 +318,13 @@ T Produce<T>(void);
 interface IEnumerable<T> {
     IEnumerator<T> GetEnumerator();
 }
+```
 
+`IEnumerator` is also `IDisposable`
+
+```csharp
 interface IEnumerable<T> {
-    IEnumerator<T> GetEnumerator(void);
+    (IDisposable & IEnumerator<T>) GetEnumerator(void);
 }
 ```
 
@@ -319,14 +339,14 @@ interface IEnumerator<T> {
 
 ```csharp
 interface IEnumerator<T> {
-    bool|Exception MoveNext(void);
+    (bool | Exception) MoveNext(void);
     T GetCurrent(void);
 }
 ```
 
 ```csharp
 interface IEnumerator<T> {
-    T|void|Exception GetNext(void);
+    (T | void | Exception) GetNext(void);
     // Either[Option[T], Exception]
 }
 ```
@@ -342,51 +362,67 @@ interface IEnumerator<T> {
 
 ---
 
-```csharp
-interface IEnumerable<T> {
-    IEnumerator<T> GetEnumerator(void);
-}
-```
-
-```csharp
-interface IObservable<T> {
-    void SetObserver(IObserver<T>);
-}
-```
-
----
+`IEnumerator` becomes `IObserver`
 
 ```csharp
 interface IEnumerator<T> {
-    T|void|Exception GetNext(void);
+    (T | void | Exception) GetNext(void);
 }
 
 interface IObserver<T> {
-    void PutNext(T|void|Exception);
+    void PutNext(T | void | Exception);
+}
+```
+
+---
+
+`IEnumerable` becomes `IObservable`
+
+```csharp
+interface IEnumerable<T> {
+    (IDisposable & IEnumerator<T>) GetEnumerator(void);
+}
+
+interface IObservable<T> {
+    IDisposable SetObserver(IObserver<T>);
+}
+```
+
+(note, `IDisposable` is technical detail, not essence)
+
+---
+
+setting and observer is subscribing:
+
+```csharp
+interface IObservable<T> {
+    IDisposable SetObserver(IObserver<T>);
+}
+```
+
+```csharp
+interface IObservable<T> {
+    IDisposable Subscribe(IObserver<T>);
 }
 ```
 
 ---
 
 ```csharp
-interface IObservable<T> {
-    void SetObserver(IObserver<T>);
+interface IObserver<T> {
+    void PutNext(T | void | Exception);
 }
 ```
 
-```csharp
-interface IObservable<T> {
-    void Subscribe(IObserver<T>);
-}
-```
-
----
+`PutNext` is `OnNext`
 
 ```csharp
 interface IObserver<T> {
-    void PutNext(T|void|Exception);
+    void OnNext(T | void | Exception);
 }
 ```
+
+with no discriminated unions, `OnNext` is implemented as three methods:
 
 ```csharp
 interface IObserver<T> {
@@ -395,6 +431,41 @@ interface IObserver<T> {
     void OnError(Exception);
 }
 ```
+
+---
+
+```csharp
+// Action<T|void|Exception>
+interface IObserver<T> {
+    void OnNext(T);
+    void OnComplete();
+    void OnError(Exception);
+}
+
+// Func<Action<T|void|Exception>, Action>
+interface IObservable<T> {
+    IDisposable Subscribe(IObserver<T>);
+}
+```
+
+familiar?
+
+***
+
+### Rx observables are kind of like Promises
+
+> In computer science, future (or promise) describes an object that acts as a proxy for a result that is initially unknown, usually because the computation of its value is yet incomplete. -- *Wikipedia*
+
+
+
+
+---
+
+
+
+
+
+***
 
 |                    | One       | Many            |
 |-------------------:|:---------:|:---------------:|
