@@ -270,9 +270,7 @@ public interface IObservable<T> {
     IDisposable Subscribe(IObserver<T> observer);
 }
 
-public interface ISubject<T>: IObservable<T>, IObserver<T> {
-    // this one doesn't really exist
-}
+public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 ```
 
 ***
@@ -454,23 +452,66 @@ familiar?
 
 ### Rx observables are kind of like Promises
 
-> In computer science, future (or promise) describes an object that acts as a proxy for a result that is initially unknown, usually because the computation of its value is yet incomplete. -- *Wikipedia*
-
-
-
+> In computer science, future (or promise) describes an object that acts as a
+proxy for a result that is initially unknown, usually because the computation
+of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
+(...insert three hour talk about M-things...)
 
+---
 
+So `Promise[T]` is the type which encapsulates the possibility of having `T` in the future.
+In .NET the implementation of `Promise` is `Task<T>`.
 
+```csharp
+task.ContinueWith(
+    t => Console.WriteLine("Result finally received: {0}", t.Result));
+```
+
+That's exactly what `IObservable<T>` 'promises': it will call `OnNext(T)`
+of all interested parties (subscribers).
+
+---
+
+`Task<T>` is a little bit more than just a promise, it is actually
+`Promise[Either[T, Exception]]`, as it may deliver `Exception` instead of `T`.
+
+```csharp
+task.ContinueWith(
+    t => Console.WriteLine("Task crashed with: {0}", t.Exception),
+    TaskContinuationOptions.OnlyOnFaulted);
+```
+
+That's exactly what `IObservable<T>` 'promises': it will call `OnError(Exception)`
+of all interested parties (subscribers).
+
+---
+
+`Task` is like an `Action`, it does not really deliver value, it just finishes
+at some point in time. Let's say it is `Promise[Either[Unit, Exception]]` or
+`Promise[Option[Exception]]`.
+
+```csharp
+task.ContinueWith(
+    t => Console.WriteLine("Yup, done."),
+    TaskContinuationOptions.OnlyOnRanToCompletion);
+```
+
+That's exactly what `IObservable<T>` 'promises': it will call `OnComplete()`
+of all interested parties (subscribers).
 
 ***
 
-|                    | One       | Many            |
-|-------------------:|:---------:|:---------------:|
-| **Synchronously**  | `T`       | `Enumerable<T>` |
-| **Asynchronously** | `Task<T>` | `Observable<T>` |
+|                    | One       | Many             |
+|-------------------:|:---------:|:----------------:|
+| **Synchronously**  | `T`       | `IEnumerable<T>` |
+| **Asynchronously** | `Task<T>` | `IObservable<T>` |
+
+***
+
+###
 
 ***
 
