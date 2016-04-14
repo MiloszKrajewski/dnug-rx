@@ -345,7 +345,7 @@ interface IEnumerator<T> {
 ```csharp
 interface IEnumerator<T> {
     (T | void | Exception) GetNext(void);
-    // Either[Option[T], Exception]
+    // Either[Maybe[T], Exception]
 }
 ```
 
@@ -462,21 +462,22 @@ of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
-So `Promise[T]` is the type which encapsulates the possibility of having `T` in the future.
-In .NET the implementation of `Promise` is `Task<T>`.
+So `Promise[T]` is the type which encapsulates the possibility of having `T` in the future. In .NET the implementation of `Promise[T]` is `Task<T>`.
 
 ```csharp
 task.ContinueWith(
     t => Console.WriteLine("Result finally received: {0}", t.Result));
 ```
 
-That's exactly what `IObservable<T>` 'promises': it will call `OnNext(T)`
-of all interested parties (subscribers).
+When `task` returns/produces a value continuation is called with the value passed in `Result` property.
 
 ---
 
-`Task<T>` is a little bit more than just a promise, it is actually
-`Promise[Either[T, Exception]]`, as it may deliver `Exception` instead of `T`.
+...and that's exactly what `IObservable<T>` does as well: it calls `OnNext(T)` for all subscribers when result is produced.
+
+---
+
+`Task<T>` is a little bit more than just `Promise[T]`, it is actually `Promise[Either[T, Exception]]`, as it may deliver `Exception` instead of `T`.
 
 ```csharp
 task.ContinueWith(
@@ -484,14 +485,15 @@ task.ContinueWith(
     TaskContinuationOptions.OnlyOnFaulted);
 ```
 
-That's exactly what `IObservable<T>` 'promises': it will call `OnError(Exception)`
-of all interested parties (subscribers).
+When `task` throws an exception continuation is called with exception passed in `Exception` property.
 
 ---
 
-`Task` is like an `Action`, it does not really deliver value, it just finishes
-at some point in time. Let's say it is `Promise[Either[Unit, Exception]]` or
-`Promise[Option[Exception]]`.
+...and that's exactly what `IObservable<T>` does as well: it calls `OnError(Exception)` for all subscribers when exception is thrown.
+
+---
+
+`Task` (no `<T>`) does not really deliver value, it just finishes at some point in time. Let's say it is `Promise[Either[Unit, Exception]]` or `Promise[Maybe[Exception]]`.
 
 ```csharp
 task.ContinueWith(
@@ -499,8 +501,11 @@ task.ContinueWith(
     TaskContinuationOptions.OnlyOnRanToCompletion);
 ```
 
-That's exactly what `IObservable<T>` 'promises': it will call `OnComplete()`
-of all interested parties (subscribers).
+When `task` finishes it does not deliver value, it calls continuation with information saying "yup, it's finished".
+
+---
+
+...and that's exactly what `IObservable<T>` does as well: it calls `OnComplete()` for all subscribers when sequence is finished.
 
 ***
 
@@ -511,7 +516,11 @@ of all interested parties (subscribers).
 
 ***
 
-###
+### So how to use it?
+
+---
+
+
 
 ***
 
