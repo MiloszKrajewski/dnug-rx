@@ -74,6 +74,7 @@ this.OnNotification(item);
 
 * Not first-class citizens (cannot pass around)
 * Clunky unsubscribe (anonymous handlers)
+* Null event handlers (managing race conditions)
 * Lapsed listener problem (event handler leak)
 
 ---
@@ -95,6 +96,8 @@ void Main() {
 }
 ```
 
+Does it compile?
+
 ---
 
 <pre>
@@ -115,6 +118,70 @@ void Main() {
 	var producer = new Producer();
 	producer.OnProduced += (s, e) => Console.WriteLine(e);
 	producer.OnProduced -= (s, e) => Console.WriteLine(e);
+}
+```
+
+---
+
+### Null event handlers
+
+Official documentation does it wrong (https://goo.gl/CEK0xm):
+
+```csharp
+class Emitter {
+    public event EventHandler<EventArgs> Changed;
+    public void OnChanged() {
+        if (Changed != null)
+            Changed(this, EventArgs.Empty); // BANG!!!
+    }
+}
+```
+
+---
+
+Recommended solution:
+
+```csharp
+class Emitter {
+    public event EventHandler<EventArgs> Changed;
+    public void OnChanged() {
+        var handler = Changed;
+        if (handler != null)
+            handler(this, EventArgs.Empty);
+    }
+}
+```
+
+---
+
+Recommended solution with extension method:
+
+```csharp
+public static class EventExtensions {
+    public static void Raise<T>(
+        this EventHandler<T> handler, object sender, T args)
+    {
+        if (handler == null) return;
+        handler(this, args);
+    }
+}
+
+class Emitter {
+    public event EventHandler<EventArgs> Changed;
+    public void OnChanged() {
+        handler.Raise(this, EventArgs.Empty);
+    }
+}
+```
+
+---
+
+My personal winner:
+
+```csharp
+class Emitter {
+    public event EventHandler<EventArgs> Changed = (s, e) => { };
+    public void OnChanged() { Changed(this, EventArgs.Empty); }
 }
 ```
 
@@ -155,7 +222,7 @@ public class LessLeakingForm: Form {
 
 ### So what are Reactive Extensions?
 
-> An API for asynchronous programming with observable streams. -- *reactivex.io*
+> An API for asynchronous programming with observable streams. -- reactivex.io
 
 ---
 
@@ -272,6 +339,98 @@ public interface IObservable<T> {
 
 public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 ```
+
+---
+
+### So how can I use Rx for events?
+
+The best way to implement events with Reactive Extensions is to use `Subject<T>` class (`PublishSubject<T>`). The idea behind `PublishSubject<T>` is that you publish a value (an event) and whoever is observing subject receives it.
+
+```csharp
+var subject = new Subject<string>();
+//...
+subject.OnNext("is anyone listening?");
+```
+
+---
+
+Also, `Subscribe(...)` has some overloads which allow to use lambdas instead of `IObserver<T>` (although, it creates lightweight `IObserver<T>` behind the scene).
+
+```csharp
+keyPressed.Subscribe(k => Console.WriteLine("Pressed: {0}", k));
+```
+
+---
+
+`Subscribe` returns `IDisposable` if unregistration is needed:
+
+```csharp
+var subscription = keyPressed.Subscribe(...);
+//...
+subscription.Dispose();
+```
+
+---
+
+Note, it's worth to invest into some kind of `DisposableBag`:
+
+```csharp
+class DisposableBag: IDisposable {
+    private List<IDisposable> _bag = new List<IDisposable>();
+    public void Add(IDisposable other) { _bag.Add(other); }
+    public void Dispose() { _bag.ForEach(d => d.Dispose()); }
+}
+```
+
+(note, it's the simplest possible implementation)
+
+---
+
+so multiple subscriptions can be managed:
+
+```csharp
+bag.Add(eventA.Subscribe(...));
+bag.Add(eventB.Subscribe(...));
+bag.Add(eventC.Subscribe(...));
+//...
+bad.Dispose();
+```
+
+---
+
+What we have already:
+
+* `IObservable<T>` can be passed around
+* Lambda-friendly `Unsubscribe`
+* Null-aware `OnNext(...)`
+
+---
+
+Usually it is implemented with following pattern:
+
+```csharp
+class Dice {
+    private Random _generator = new Random();
+
+    private ISubject<int> _rolled = new Subject<int>();
+    public IObservable<int> OnRolled { get { return _rolled; } }
+
+    public void Roll() {
+        _rolled.OnNext(_generator.Next(6) + 1);
+    }
+}
+```
+
+---
+
+```csharp
+class Player {
+    public Player(Dice dice) {
+        dice.Subscribe(d => Console.WriteLine("I see dice: {0}", d));
+    }
+}
+```
+!!!
 
 ***
 
