@@ -176,7 +176,7 @@ class Emitter {
 
 ---
 
-My personal winner:
+My personal winner is 'untouchable' lambda:
 
 ```csharp
 class Emitter {
@@ -382,7 +382,7 @@ class DisposableBag: IDisposable {
 }
 ```
 
-(note, it's the simplest possible implementation)
+(proper implementation should handle add-after-dispose, exception-on-dispose, and be thread-safe)
 
 ---
 
@@ -393,7 +393,7 @@ bag.Add(eventA.Subscribe(...));
 bag.Add(eventB.Subscribe(...));
 bag.Add(eventC.Subscribe(...));
 //...
-bad.Dispose();
+bag.Dispose();
 ```
 
 ---
@@ -406,7 +406,7 @@ What we have already:
 
 ---
 
-Usually it is implemented with following pattern:
+Usually it is:
 
 ```csharp
 class Dice {
@@ -421,7 +421,13 @@ class Dice {
 }
 ```
 
+* implemented a `Subject<T>`
+* exposed as `IObservable<T>`
+* triggered with `OnNext(T)`
+
 ---
+
+And:
 
 ```csharp
 class Player {
@@ -430,7 +436,14 @@ class Player {
     }
 }
 ```
-!!!
+
+* subscribed to with some lambda
+
+---
+
+### Yes, I know
+
+We did not address **Lapsed listener problem**. Be patient.
 
 ***
 
@@ -606,6 +619,34 @@ interface IObservable<T> {
 ```
 
 familiar?
+
+***
+
+### So how can I use Rx for streams?
+
+Almost every single operator you have in LINQ (for `IEnumerable<T>`) you can expect in Reactive Exceptions. The additional operators are related to managing **time** and **absence** of events.
+
+```csharp
+keyboard.OnKeyPressed
+    .Where(k => k != 'A')
+    .Subscribe(k => Console.WriteLine("The key you pressed is NOT 'A'"));
+```
+
+---
+
+### The operators are not magic
+
+```csharp
+public static IObservable<T> Where<T>(
+    this IObservable<T> input, Func<T, bool> predicate)
+{
+    var output = new Subject<T>();
+    input.Subscribe(v => { if (predicate(v)) output.OnNext(v); });
+    return output;
+}
+```
+
+(this is not a good implementation, it just gives an idea how it works)
 
 ***
 
