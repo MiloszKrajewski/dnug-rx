@@ -77,6 +77,8 @@ this.OnNotification(item);
 * Null event handlers (managing race conditions)
 * Lapsed listener problem (event handler leak)
 
+(Java does not really help you with events, either)
+
 ---
 
 ### Not first-class citizens
@@ -129,10 +131,10 @@ Official documentation does it wrong (https://goo.gl/CEK0xm):
 
 ```csharp
 class Emitter {
-    public event EventHandler<EventArgs> Changed;
-    public void OnChanged() {
+    public event EventHandler<int> Changed;
+    public void OnChanged(int newValue) {
         if (Changed != null)
-            Changed(this, EventArgs.Empty); // BANG!!!
+            Changed(this, newValue); // BANG!!!
     }
 }
 ```
@@ -143,11 +145,11 @@ Recommended solution:
 
 ```csharp
 class Emitter {
-    public event EventHandler<EventArgs> Changed;
-    public void OnChanged() {
+    public event EventHandler<int> Changed;
+    public void OnChanged(int newValue) {
         var handler = Changed;
         if (handler != null)
-            handler(this, EventArgs.Empty);
+            handler(this, newValue);
     }
 }
 ```
@@ -167,9 +169,9 @@ public static class EventExtensions {
 }
 
 class Emitter {
-    public event EventHandler<EventArgs> Changed;
-    public void OnChanged() {
-        handler.Raise(this, EventArgs.Empty);
+    public event EventHandler<int> Changed;
+    public void OnChanged(int newValue) {
+        handler.Raise(this, newValue);
     }
 }
 ```
@@ -180,8 +182,10 @@ My personal winner:
 
 ```csharp
 class Emitter {
-    public event EventHandler<EventArgs> Changed = (s, e) => { };
-    public void OnChanged() { Changed(this, EventArgs.Empty); }
+    public event EventHandler<int> Changed = (s, e) => { };
+    public void OnChanged(int newValue) {
+        Changed(this, newValue);
+    }
 }
 ```
 
@@ -229,14 +233,14 @@ public class LessLeakingForm: Form {
 when reading between the lines we get:
 
 * **observable**: Events
-* **asynchronous**: Tasks
 * **streams**: Enumerables
+* **asynchronous**: Tasks
 
 ![Everything](images/everything.png)
 
 ***
 
-### Rx observables are like events
+### Rx observables are like events<br>(and GoF subjects)
 
 ```csharp
 public interface IObserver<T> { // GoF
@@ -285,8 +289,8 @@ public interface IObservable<T> {
 }
 ```
 
-`Unsubscribe` is unnecessary with `IDisposable`<br>
-(and now more lambda-friendly)
+`Unsubscribe` is actually redundant...
+
 
 ```csharp
 public interface IObservable<T> {
@@ -294,7 +298,7 @@ public interface IObservable<T> {
 }
 ```
 
-(and it cannot be done generically for events!)
+...if replaced by `IDisposable`
 
 ---
 
@@ -406,7 +410,7 @@ What we have already:
 
 ---
 
-Usually it is implemented with following pattern:
+Event emitter implemented with `IObservable`...
 
 ```csharp
 class Dice {
@@ -423,14 +427,16 @@ class Dice {
 
 ---
 
+...and event handler implemented with (implicit) `IObserver`:
+
 ```csharp
 class Player {
     public Player(Dice dice) {
-        dice.Subscribe(d => Console.WriteLine("I see dice: {0}", d));
+        dice.OnRolled.Subscribe(
+            d => Console.WriteLine("I see dice: {0}", d));
     }
 }
 ```
-!!!
 
 ***
 
@@ -452,8 +458,7 @@ StreamOfBytes Scan(SheetOfPaper);
 
 ---
 
-* Swap inputs and outputs
-* Use opposite terms
+### Swap inputs and outputs<br>(and find opposite name)
 
 ```csharp
 int Parse(string);
@@ -469,6 +474,10 @@ T Deserialize<T>(byte[]);
 void Consume<T>(T);
 T Produce<T>(void);
 ```
+---
+
+Let's do this for `IEnumerable` and `IEnumerator`<br>(step by step)
+
 ---
 
 ```csharp
@@ -514,9 +523,7 @@ interface IEnumerator<T> {
 
 ![magic hat](images/magic-hat.jpg)
 
-* Swap inputs and outputs
-* Use opposite terms
-
+### Swap inputs and outputs<br>(and find opposite name)
 ---
 
 `IEnumerator` becomes `IObserver`
