@@ -25,6 +25,17 @@
 
 ***
 
+### Familiar != Easy != Simple
+
+* Polish is neither **easy** nor **simple**, but for some people is **familiar**
+* successful stock trading is **simple** (buy low and sell high), it's not **easy** though
+
+---
+
+Reactive programming is **simple** but not **easy**
+
+***
+
 ### Observer Pattern
 
 ![Observer Pattern](images/observer-wikipedia.png)
@@ -326,14 +337,12 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 
 ---
 
-### Rx interfaces
+### Rx interfaces for events
 
 ```csharp
 // Action<T>
 public interface IObserver<T> {
     void OnNext(T item);
-    // void OnComplete();
-    // void OnError(Exception);
 }
 
 // Func<Action<T>, Action>
@@ -348,7 +357,7 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 
 ### So how can I use Rx for events?
 
-The best way to implement events with Reactive Extensions is to use `Subject<T>` class (`PublishSubject<T>`). The idea behind `PublishSubject<T>` is that you publish a value (an event) and whoever is observing subject receives it.
+The way to implement events is to use `Subject<T>`<br>(also known as `PublishSubject<T>`):
 
 ```csharp
 var subject = new Subject<string>();
@@ -358,15 +367,17 @@ subject.OnNext("is anyone listening?");
 
 ---
 
-Also, `Subscribe(...)` has some overloads which allow to use lambdas instead of `IObserver<T>` (although, it creates lightweight `IObserver<T>` behind the scene).
+`Subscribe(...)` has overloads allowing to use lambdas:
 
 ```csharp
 keyPressed.Subscribe(k => Console.WriteLine("Pressed: {0}", k));
 ```
 
+(they create lightweight `IObserver<T>` behind the scene)
+
 ---
 
-`Subscribe` returns `IDisposable` if unregistration is needed:
+`Subscribe(...)` returns `IDisposable`:
 
 ```csharp
 var subscription = keyPressed.Subscribe(...);
@@ -374,12 +385,14 @@ var subscription = keyPressed.Subscribe(...);
 subscription.Dispose();
 ```
 
+...to help control subscription lifespan.
+
 ---
 
-Note, it's worth to invest into some kind of `DisposableBag`:
+It's worth to invest into some kind of `DisposableBag`:
 
 ```csharp
-class DisposableBag: IDisposable {
+public class DisposableBag: IDisposable {
     private List<IDisposable> _bag = new List<IDisposable>();
     public void Add(IDisposable other) { _bag.Add(other); }
     public void Dispose() { _bag.ForEach(d => d.Dispose()); }
@@ -405,16 +418,15 @@ bag.Dispose();
 What we have already:
 
 * `IObservable<T>` can be passed around
-* Lambda-friendly `Unsubscribe`
+* Lambda-friendly `Unsubscribe(...)`
 * Null-aware `OnNext(...)`
 
 ---
 
-Event emitter implemented with `IObservable`...
-Usually it is:
+So Rx event source is:
 
 ```csharp
-class Dice {
+public class Dice {
     private Random _generator = new Random();
 
     private ISubject<int> _rolled = new Subject<int>();
@@ -426,17 +438,14 @@ class Dice {
 }
 ```
 
-* implemented a `Subject<T>`
-* exposed as `IObservable<T>`
-* triggered with `OnNext(T)`
+...implemented with `Subject<T>`, exposed as `IObservable<T>`, triggered with `OnNext(T)`...
 
 ---
 
-...and event handler implemented with (implicit) `IObserver`:
-And:
+...while Rx event handler is:
 
 ```csharp
-class Player {
+public class Player {
     public Player(Dice dice) {
         dice.OnRolled.Subscribe(
             d => Console.WriteLine("I see dice: {0}", d));
@@ -444,13 +453,13 @@ class Player {
 }
 ```
 
-* subscribed to with some lambda
+...implemented with `Subscribe(...)` using (implicit) `IObserver`.
 
 ---
 
 ### Yes, I know
 
-We did not address **Lapsed listener problem**. Be patient.
+We did not address **Lapsed listener problem**. It's easy but not for free. Be patient.
 
 ***
 
@@ -538,6 +547,7 @@ interface IEnumerator<T> {
 ![magic hat](images/magic-hat.jpg)
 
 ### Swap inputs and outputs<br>(and find opposite name)
+
 ---
 
 `IEnumerator` becomes `IObserver`
@@ -566,7 +576,7 @@ interface IObservable<T> {
 }
 ```
 
-(note, `IDisposable` is technical detail, not essence)
+(`IDisposable` is technical detail)
 
 ---
 
@@ -592,7 +602,7 @@ interface IObserver<T> {
 }
 ```
 
-`PutNext` is `OnNext`
+`PutNext` is `OnNext`:
 
 ```csharp
 interface IObserver<T> {
@@ -600,7 +610,8 @@ interface IObserver<T> {
 }
 ```
 
-with no discriminated unions, `OnNext` is implemented as three methods:
+...in absence of discriminated unions,<br>
+`OnNext` is implemented as three methods:
 
 ```csharp
 interface IObserver<T> {
@@ -624,25 +635,32 @@ interface IObserver<T> {
 interface IObservable<T> {
     IDisposable Subscribe(IObserver<T>);
 }
-```
 
-familiar?
+public interface ISubject<T>: IObservable<T>, IObserver<T> { }
+```
 
 ***
 
 ### So how can I use Rx for streams?
 
-Almost every single operator you have in LINQ (for `IEnumerable<T>`) you can expect in Reactive Exceptions. The additional operators are related to managing **time** and **absence** of events.
+Almost every single operator defined for `IEnumerable<T>`<br>
+can be expected for `IObservable<T>`:
 
 ```csharp
 keyboard.OnKeyPressed
+    .Select(k => k.ToUpper())
     .Where(k => k != 'A')
-    .Subscribe(k => Console.WriteLine("The key you pressed is NOT 'A'"));
+    // it's a different event here!
+    .Subscribe(k => Console.WriteLine("Press 'A'. Try again."));
 ```
+
+..the additional operators are usually related to managing **time** and **absence** of events.
 
 ---
 
 ### The operators are not magic
+
+Here's `Where(...)`:
 
 ```csharp
 public static IObservable<T> Where<T>(
@@ -654,7 +672,31 @@ public static IObservable<T> Where<T>(
 }
 ```
 
-(this is not a good implementation, it just gives an idea how it works)
+---
+
+...and `Select(...)`:
+
+```csharp
+public static IObservable<R> Select<T, R>(
+    this IObservable<T> input, Func<T, R> selector)
+{
+    var output = new Subject<R>();
+    input.Subscribe(v => output.OnNext(selector(v)));
+    return output;
+}
+```
+
+(this is **not** a good implementation,<br>
+it just gives an idea how it works,<br>
+use `Observable.Create(...)` instead)
+
+---
+
+| `IEnumerable<T>` | `IObservable<T>`      |
+|:----------------:|:---------------------:|
+| `yield return i` | `output.OnNext(i)`    |
+| `yield break`    | `output.OnComplete()` |
+| `throw e`        | `output.OnError(e)`   |
 
 ***
 
