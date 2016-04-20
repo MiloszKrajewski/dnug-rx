@@ -692,11 +692,11 @@ use `Observable.Create(...)` instead)
 
 ---
 
-| `IEnumerable<T>` | `IObservable<T>`      |
-|:----------------:|:---------------------:|
-| `yield return i` | `output.OnNext(i)`    |
-| `yield break`    | `output.OnComplete()` |
-| `throw e`        | `output.OnError(e)`   |
+| `IEnumerable<T>` | `IObservable<T>`    |
+|:----------------:|:-------------------:|
+| yield return i   | output.OnNext(i)    |
+| yield break      | output.OnComplete() |
+| throw e          | output.OnError(e)   |
 
 ***
 
@@ -712,7 +712,7 @@ of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
-So `Promise[T]` is the type which encapsulates the possibility of having `T` in the future. In .NET the implementation of `Promise[T]` is `Task<T>`.
+`Promise[T]` (we call it `Task<T>` in .NET) is the type which encapsulates the possibility of having `T` in the future.<br>
 
 ```csharp
 task.ContinueWith(
@@ -723,11 +723,14 @@ When `task` returns/produces a value continuation is called with the value passe
 
 ---
 
-...and that's exactly what `IObservable<T>` does as well: it calls `OnNext(T)` for all subscribers when result is produced.
+...and that's exactly what `IObservable<T>` does as well:<br>
+it calls `OnNext(T)` for all subscribers when result is produced.
 
 ---
 
-`Task<T>` is a little bit more than just `Promise[T]`, it is actually `Promise[Either[T, Exception]]`, as it may deliver `Exception` instead of `T`.
+`Task<T>` is a little bit more than just `Promise[T]`,<br>
+it is actually `Promise[Either[T, Exception]]`,<br>
+as it may deliver `Exception` instead of `T`.
 
 ```csharp
 task.ContinueWith(
@@ -739,11 +742,14 @@ When `task` throws an exception continuation is called with exception passed in 
 
 ---
 
-...and that's exactly what `IObservable<T>` does as well: it calls `OnError(Exception)` for all subscribers when exception is thrown.
+...and that's exactly what `IObservable<T>` does as well:<br>
+it calls `OnError(Exception)` for all subscribers when exception is thrown.
 
 ---
 
-`Task` (no `<T>`) does not really deliver value, it just finishes at some point in time. Let's say it is `Promise[Either[Unit, Exception]]` or `Promise[Maybe[Exception]]`.
+`Task` (no `<T>`) does not really deliver value,<br>
+it just finishes at some point in time.<br>
+Let's say it is `Promise[Either[Unit, Exception]]`.
 
 ```csharp
 task.ContinueWith(
@@ -755,7 +761,8 @@ When `task` finishes it does not deliver value, it calls continuation with infor
 
 ---
 
-...and that's exactly what `IObservable<T>` does as well: it calls `OnComplete()` for all subscribers when sequence is finished.
+...and that's exactly what `IObservable<T>` does as well:<br>
+it calls `OnComplete()` for all subscribers when sequence is finished.
 
 ***
 
@@ -769,6 +776,42 @@ When `task` finishes it does not deliver value, it calls continuation with infor
 ### So how to use it?
 
 ---
+
+---
+
+```csharp
+public void LongRunningOperation(bool debug) {
+    while (!finished) {
+        if (debug) executeDebugActions();
+        executeStandardActions();
+    }
+}
+
+---
+
+```csharp
+public void LongRunningOperation(Func<bool> debugQuery) {
+    while (!finished) {
+        if (debugQuery()) executeDebugActions();
+        executeStandardActions();
+    }
+}
+
+---
+
+```csharp
+public void LongRunningOperation(IObservable<bool> debugStream) {
+    var debugStream.Capture();
+    while (!finished) {
+        if (debug()) executeDebugActions();
+        executeStandardActions();
+    }
+}
+
+
+
+
+```
 
 
 
