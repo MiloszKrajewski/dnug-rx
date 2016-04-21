@@ -786,6 +786,7 @@ public void LongRunningOperation(bool debug) {
         executeStandardActions();
     }
 }
+```
 
 ---
 
@@ -796,6 +797,7 @@ public void LongRunningOperation(Func<bool> debugQuery) {
         executeStandardActions();
     }
 }
+```
 
 ---
 
@@ -807,7 +809,7 @@ public void LongRunningOperation(IObservable<bool> debugStream) {
         executeStandardActions();
     }
 }
-
+```
 
 
 
