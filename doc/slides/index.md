@@ -270,7 +270,7 @@ public interface IObserver<T> { // Rx
 ### GoF vs Rx subjects
 
 ```csharp
-public interface ISubject<T> {
+public interface ISubject<T> { // GoF
     void Subscribe(IObserver<T> observer);
     void Unsubscribe(IObserver<T> observer);
     void Notify(T item);
@@ -357,7 +357,8 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 
 ### So how can I use Rx for events?
 
-The way to implement events is to use `Subject<T>`<br>(also known as `PublishSubject<T>`):
+The way to implement events is to use `Subject<T>`<br>
+(also known as `PublishSubject<T>`):
 
 ```csharp
 var subject = new Subject<string>();
@@ -373,7 +374,7 @@ subject.OnNext("is anyone listening?");
 keyPressed.Subscribe(k => Console.WriteLine("Pressed: {0}", k));
 ```
 
-(they create lightweight `IObserver<T>` behind the scene)
+(lightweight `IObserver<T>` is created behind the scene)
 
 ---
 
@@ -453,7 +454,7 @@ public class Player {
 }
 ```
 
-...implemented with `Subscribe(...)` using (implicit) `IObserver`.
+...implemented with `Subscribe(...)` using (implicit) `IObserver<T>`.
 
 ---
 
@@ -499,7 +500,8 @@ T Produce<T>(void);
 ```
 ---
 
-Let's do this for `IEnumerable` and `IEnumerator`<br>(step by step)
+Let's do this for `IEnumerable<T>` and `IEnumerator<T>`<br>
+(step by step)
 
 ---
 
@@ -650,11 +652,11 @@ can be expected for `IObservable<T>`:
 keyboard.OnKeyPressed
     .Select(k => k.ToUpper())
     .Where(k => k != 'A')
-    // it's a different event here!
     .Subscribe(k => Console.WriteLine("Press 'A'. Try again."));
 ```
 
-..the additional operators are usually related to managing **time** and **absence** of events.
+...the extra operators are usually related to managing<br>
+**time** and **absence** of events.
 
 ---
 
@@ -712,7 +714,7 @@ of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
-`Promise[T]` (we call it `Task<T>` in .NET) is the type which encapsulates the possibility of having `T` in the future.<br>
+`Promise[T]` (we call it `Task<T>` in .NET) is the type which encapsulates the possibility of having `T` in the future.
 
 ```csharp
 task.ContinueWith(
@@ -777,6 +779,12 @@ it calls `OnComplete()` for all subscribers when sequence is finished.
 
 ---
 
+Throttle, Switch
+SelectAsync (FanOut?)
+Pairwise (Let/Zip?)
+TakeUntil (Lapsed listener)
+
+
 ---
 
 ```csharp
@@ -803,9 +811,10 @@ public void LongRunningOperation(Func<bool> debugQuery) {
 
 ```csharp
 public void LongRunningOperation(IObservable<bool> debugStream) {
-    var debugStream.Capture();
+    volatile bool debug = false; // ManualResetEvent, Interlocked
+    debugStream.Subscribe(d => debug = d);
     while (!finished) {
-        if (debug()) executeDebugActions();
+        if (debug) executeDebugActions();
         executeStandardActions();
     }
 }
