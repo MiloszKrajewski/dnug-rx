@@ -710,11 +710,12 @@ of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
-(...insert three hour talk about M-things...)
+(...three hour talk about M-things...)
 
 ---
 
-`Promise[T]` (we call it `Task<T>` in .NET) is the type which encapsulates the possibility of having `T` in the future.
+`Promise[T]` (`Task<T>`)<br>
+encapsulates the possibility of having `T` in the future.
 
 ```csharp
 task.ContinueWith(
