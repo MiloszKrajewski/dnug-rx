@@ -32,7 +32,8 @@
 
 ---
 
-Reactive programming is **simple** but not **easy**
+Reactive programming is **simple** but not **easy**.<br>
+It's worth to make it **familiar**.
 
 ***
 
@@ -714,7 +715,7 @@ of its value is yet incomplete. -- *Wikipedia* (kind of)
 
 ---
 
-`Promise[T]` (`Task<T>`)<br>
+`Promise[T]` (`Task<T>` in .NET)<br>
 encapsulates the possibility of having `T` in the future.
 
 ```csharp
@@ -731,7 +732,7 @@ it calls `OnNext(T)` for all subscribers when result is produced.
 
 ---
 
-`Task<T>` is a little bit more than just `Promise[T]`,<br>
+`Promise[T]` is a little bit more though,<br>
 it is actually `Promise[Either[T, Exception]]`,<br>
 as it may deliver `Exception` instead of `T`.
 
@@ -752,7 +753,7 @@ it calls `OnError(Exception)` for all subscribers when exception is thrown.
 
 `Task` (no `<T>`) does not really deliver value,<br>
 it just finishes at some point in time.<br>
-Let's say it is `Promise[Either[Unit, Exception]]`.
+Let's say it is `Promise[Maybe[Exception]]`.
 
 ```csharp
 task.ContinueWith(
@@ -769,10 +770,15 @@ it calls `OnComplete()` for all subscribers when sequence is finished.
 
 ***
 
+`Observables` share characteristics of both `Promises` and `Sequences`.
+
 |                    | One       | Many             |
 |-------------------:|:---------:|:----------------:|
 | **Synchronously**  | `T`       | `IEnumerable<T>` |
 | **Asynchronously** | `Task<T>` | `IObservable<T>` |
+
+Reactive Extensions do not provide new concepts,<br>
+but rather new view on old ones.
 
 ***
 
