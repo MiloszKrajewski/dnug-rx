@@ -786,6 +786,37 @@ but rather new view on old ones.
 
 ---
 
+		private System.Windows.Forms.ListBox list;
+		private System.Windows.Forms.TextBox edit;
+
+
+		IEnumerable<string> Fetch(string prefix);
+		async Task<IEnumerable<string>> FetchAsync(string prefix);
+        
+			var textChanges = Observable
+				.FromEventPattern(
+					h => edit.TextChanged += h,
+					h => edit.TextChanged -= h)
+				.Select(_ => edit.Text);
+
+			textChanges
+				.Throttle(TimeSpan.FromMilliseconds(500))
+				.DistinctUntilChanged()
+				.Where(text => !string.IsNullOrWhiteSpace(text))
+				.Select(text => WordList.FetchAsync(text))
+				.Switch()
+				.ObserveOn(this)
+				.Subscribe(items => SetList(items));
+		}
+
+		private void SetList(IEnumerable<string> items)
+		{
+			list.Items.Clear();
+			list.Items.AddRange(items.ToArray());
+		}
+
+
+
 Throttle, Switch
 SelectAsync (FanOut?)
 Pairwise (Let/Zip?)
