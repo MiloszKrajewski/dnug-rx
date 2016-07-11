@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace WordWebService
@@ -22,16 +23,16 @@ namespace WordWebService
 				.Throttle(TimeSpan.FromMilliseconds(500))
 				.DistinctUntilChanged()
 				.Where(text => !string.IsNullOrWhiteSpace(text))
-				.Select(text => WordList.FetchAsync(text))
+				.Select(WordList.FetchAsync)
 				.Switch()
 				.ObserveOn(this)
-				.Subscribe(items => SetList(items));
+				.Subscribe(LoadWords);
 		}
 
-		private void SetList(IEnumerable<string> items)
+		private void LoadWords(string[] items)
 		{
 			list.Items.Clear();
-			list.Items.AddRange(items.ToArray());
+			list.Items.AddRange(items);
 		}
 	}
 }

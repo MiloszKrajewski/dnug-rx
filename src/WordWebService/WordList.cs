@@ -10,6 +10,7 @@ namespace WordWebService
 	public static class WordList
 	{
 		private static readonly TimeSpan FIVE_SECS = TimeSpan.FromSeconds(5);
+		private static readonly string[] EMPTY_LIST = new string[0];
 
 		private static readonly string[] _words;
 
@@ -25,8 +26,14 @@ namespace WordWebService
 
 		public static void Initialize() { /* just force static constructor */ }
 
-		public static IEnumerable<string> Fetch(string prefix)
+		public static string[] Fetch(string prefix)
 		{
+			if (string.IsNullOrWhiteSpace(prefix))
+			{
+				Console.WriteLine("{0:u} empty", DateTime.Now);
+				return EMPTY_LIST;
+			}
+
 			Console.WriteLine("{0:u} filter: {1}", DateTime.Now, prefix);
 			var result = _words.Where(w => w.StartsWith(prefix)).ToArray();
 			Console.WriteLine("{0:u} sleep: {1}", DateTime.Now, prefix);
@@ -35,8 +42,14 @@ namespace WordWebService
 			return result;
 		}
 
-		public static async Task<IEnumerable<string>> FetchAsync(string prefix)
+		public static async Task<string[]> FetchAsync(string prefix)
 		{
+			if (string.IsNullOrWhiteSpace(prefix))
+			{
+				Console.WriteLine("{0:u} empty", DateTime.Now);
+				return EMPTY_LIST;
+			}
+
 			Console.WriteLine("{0:u} filter: {1}", DateTime.Now, prefix);
 			var result = _words.Where(w => w.StartsWith(prefix)).ToArray();
 			Console.WriteLine("{0:u} sleep: {1}", DateTime.Now, prefix);

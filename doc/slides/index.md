@@ -784,20 +784,81 @@ but rather new view on old ones.
 
 ### So how to use it?
 
+***
+
+Let's assume there is a form:
+
+![WordList](images/wordlist.png)
+
+```csharp
+// This interface is demonstration purposes only
+// Names used shadow existing Form properties
+public interface IWordListView {
+    event EventHandler TextChanged;
+    string Text { get; }
+    void Load(IEnumerable<string> words);
+}
+```
+
 ---
 
-		private System.Windows.Forms.ListBox list;
-		private System.Windows.Forms.TextBox edit;
+There's also a service allowing to fetch suggestions:
 
+```csharp
+public interface IWordListService {
+    string[] Fetch(string prefix); // IEnumerable<string>
+    // Task<string[]> FetchAsync(string prefix);
+}
+```
 
-		IEnumerable<string> Fetch(string prefix);
-		async Task<IEnumerable<string>> FetchAsync(string prefix);
-        
-			var textChanges = Observable
-				.FromEventPattern(
-					h => edit.TextChanged += h,
-					h => edit.TextChanged -= h)
-				.Select(_ => edit.Text);
+---
+
+Let's wrap event as `Observable<string>`:
+
+```csharp
+var textChanges = Observable
+    .FromEventPattern(
+        h => edit.TextChanged += h,
+        h => edit.TextChanged -= h)
+    .Select(_ => edit.Text);
+```
+
+---
+
+Now we can handle `textChanges` observable, like we would with events:
+
+```csharp
+textChanges
+    // IObservable<string>
+    .Select(text => WordList.Fetch(text))
+    // IObservable<IEnumerable<string>>
+    .Subscribe(words => LoadWords(words));
+```
+
+Isn't it great?<br>
+(hint: no, it isn't)
+
+---
+
+We don't like the fact that it freezes the UI:
+
+```csharp
+textChanges
+    // IObservable<string>
+    .SelectMany(text => Task.Run(() => WordList.Fetch(text)))
+    // IObservable<IEnumerable<string>>
+    .Subscribe(words => LoadWords(words));
+```
+
+---
+
+```csharp
+// Task<T> ~ IObservable<T> ~ IEnumerable<T>
+IEnumerable<T> SelectMany(IEnumerable<IEnumerable<T>> nested);
+IObservable<T> SelectMany(IObservable<IObservable<T>> nested);
+IObservable<T> SelectMany(IObservable<Task<T>> nested);
+---
+
 
 			textChanges
 				.Throttle(TimeSpan.FromMilliseconds(500))
