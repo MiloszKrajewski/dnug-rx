@@ -9,6 +9,7 @@ namespace WordWebService
 {
 	public static class WordList
 	{
+		private static readonly TimeSpan ONE_SEC = TimeSpan.FromSeconds(1);
 		private static readonly TimeSpan FIVE_SECS = TimeSpan.FromSeconds(5);
 		private static readonly string[] EMPTY_LIST = new string[0];
 
@@ -34,11 +35,17 @@ namespace WordWebService
 				return EMPTY_LIST;
 			}
 
-			Console.WriteLine("{0:u} filter: {1}", DateTime.Now, prefix);
+			Console.WriteLine("{0:u} [{1}] filter", DateTime.Now, prefix);
 			var result = _words.Where(w => w.StartsWith(prefix)).ToArray();
-			Console.WriteLine("{0:u} sleep: {1}", DateTime.Now, prefix);
-			Thread.Sleep(FIVE_SECS);
-			Console.WriteLine("{0:u} return: {1}", DateTime.Now, prefix);
+			Console.WriteLine("{0:u} [{1}] sleep", DateTime.Now, prefix);
+
+			for (int i = 1; i <= 5; i++)
+			{
+				Thread.Sleep(ONE_SEC);
+				Console.WriteLine("{0:u} [{1}] {2}s", DateTime.Now, prefix, i);
+			}
+
+			Console.WriteLine("{0:u} [{1}] done", DateTime.Now, prefix);
 			return result;
 		}
 
@@ -50,11 +57,17 @@ namespace WordWebService
 				return EMPTY_LIST;
 			}
 
-			Console.WriteLine("{0:u} filter: {1}", DateTime.Now, prefix);
+			Console.WriteLine("{0:u} [{1}] filter", DateTime.Now, prefix);
 			var result = _words.Where(w => w.StartsWith(prefix)).ToArray();
-			Console.WriteLine("{0:u} sleep: {1}", DateTime.Now, prefix);
-			await Task.Delay(FIVE_SECS);
-			Console.WriteLine("{0:u} return: {1}", DateTime.Now, prefix);
+			Console.WriteLine("{0:u} [{1}] sleep", DateTime.Now, prefix);
+
+			for (int i = 1; i <= 5; i++)
+			{
+				await Task.Delay(ONE_SEC);
+				Console.WriteLine("{0:u} [{1}] {2}s", DateTime.Now, prefix, i);
+			}
+
+			Console.WriteLine("{0:u} [{1}] done", DateTime.Now, prefix);
 			return result;
 		}
 	}

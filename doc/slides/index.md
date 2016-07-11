@@ -806,8 +806,8 @@ There's also a service allowing to fetch suggestions:
 
 ```csharp
 public interface IWordListService {
-    string[] Fetch(string prefix); // IEnumerable<string>
-    // Task<string[]> FetchAsync(string prefix);
+    string[] Fetch(string prefix); // string[]
+    Task<string[]> FetchAsync(string prefix); // Task<string[]>
 }
 ```
 
@@ -819,67 +819,91 @@ Let's wrap event as `Observable<string>`:
 var textChanges = Observable
     .FromEventPattern(
         h => edit.TextChanged += h,
-        h => edit.TextChanged -= h)
-    .Select(_ => edit.Text);
+        h => edit.TextChanged -= h) // IObservable<EventArgs>
+    .Select(_ => edit.Text); // IObservable<string>
 ```
 
 ---
 
-Now we can handle `textChanges` observable, like we would with events:
+Now we can handle `textChanges` observable,<br>
+map it with `Select(WordList.Fetch)`<br>
+and then populate listbox with `Subscribe(LoadWords)`:
 
 ```csharp
-textChanges
-    // IObservable<string>
-    .Select(text => WordList.Fetch(text))
-    // IObservable<IEnumerable<string>>
-    .Subscribe(words => LoadWords(words));
+textChanges // IObservable<string>
+    .Select(WordList.Fetch) // IObservable<string[]>
+    .Subscribe(LoadWords);
 ```
-
-Isn't it great?<br>
-(hint: no, it isn't)
 
 ---
 
-We don't like the fact that it freezes the UI:
+We don't like the fact that it freezes the UI,<br>
+so we spawn a task with `Task.Run(...)`<br>
+and extract `T` from `Task<T>` with `SelectMany(...)`
 
 ```csharp
-textChanges
-    // IObservable<string>
+textChanges // IObservable<string>
     .SelectMany(text => Task.Run(() => WordList.Fetch(text)))
-    // IObservable<IEnumerable<string>>
-    .Subscribe(words => LoadWords(words));
+    // IObservable<Task<string[]>> -> IObservable<string[]>
+    .Subscribe(LoadWords);
 ```
 
 ---
 
+`SelectMany` (aka `bind` or `flatMap`)
+
 ```csharp
-// Task<T> ~ IObservable<T> ~ IEnumerable<T>
 IEnumerable<T> SelectMany(IEnumerable<IEnumerable<T>> nested);
+// IEnumerable<T> ~ IObservable<T>
 IObservable<T> SelectMany(IObservable<IObservable<T>> nested);
+// IObservable<T> ~ Task<T>
 IObservable<T> SelectMany(IObservable<Task<T>> nested);
+```
+
 ---
 
+There is one problem though,<br>
+it actually crashes because of cross-thread UI access.<br>
+We need to use `ObserveOn(...)` to sync to UI thread.
 
-			textChanges
-				.Throttle(TimeSpan.FromMilliseconds(500))
-				.DistinctUntilChanged()
-				.Where(text => !string.IsNullOrWhiteSpace(text))
-				.Select(text => WordList.FetchAsync(text))
-				.Switch()
-				.ObserveOn(this)
-				.Subscribe(items => SetList(items));
-		}
+```csharp
+textChanges // IObservable<string>
+    .SelectMany(WordList.FetchAsync)
+    .ObserveOn(this) // IObservable<string[]>
+    .Subscribe(LoadWords);
+```
 
-		private void SetList(IEnumerable<string> items)
-		{
-			list.Items.Clear();
-			list.Items.AddRange(items.ToArray());
-		}
+---
 
+But we don't need to fetch all the time,<br>
+let's wait for user to stop typing with `Throttle(...)`<br>
+and avoid duplicates with `DistinctUntilChanged()`:
 
+```csharp
+textChanges // IObservable<string>
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .DistinctUntilChanged()
+    .SelectMany(WordList.FetchAsync) // IObservable<string[]>
+    .ObserveOn(this)
+    .Subscribe(LoadWords);
+```
 
-Throttle, Switch
-SelectAsync (FanOut?)
+---
+
+Actually, `SelectMany` introduces the risk of messing order,<br>
+`Switch(...)` takes `IObservable<IObservable<T>>` and<br>
+flattens it by taking *last*:
+
+```csharp
+textChanges // IObservable<string>
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .DistinctUntilChanged()
+    .Select(WordList.FetchAsync) // IObservable<Task<string[]>>
+    .Switch() // IObservable<string[]>
+    .ObserveOn(this)
+    .Subscribe(LoadWords);
+```
+
 Pairwise (Let/Zip?)
 TakeUntil (Lapsed listener)
 

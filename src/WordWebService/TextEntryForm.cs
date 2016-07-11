@@ -22,7 +22,6 @@ namespace WordWebService
 			textChanges
 				.Throttle(TimeSpan.FromMilliseconds(500))
 				.DistinctUntilChanged()
-				.Where(text => !string.IsNullOrWhiteSpace(text))
 				.Select(WordList.FetchAsync)
 				.Switch()
 				.ObserveOn(this)
