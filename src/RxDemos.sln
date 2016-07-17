@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordWebService", "WordWebService\WordWebService.csproj", "{44D34BF7-814A-4C9B-8919-7BED51DDDED8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObservableNetwork", "ObservableNetwork\ObservableNetwork.csproj", "{AB2BF70D-8216-4A33-A510-20FECB52C55C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

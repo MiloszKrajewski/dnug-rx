@@ -772,10 +772,14 @@ it calls `OnComplete()` for all subscribers when sequence is finished.
 
 `Observables` share characteristics of both `Promises` and `Sequences`.
 
+---
+
 |                    | One       | Many             |
 |-------------------:|:---------:|:----------------:|
 | **Synchronously**  | `T`       | `IEnumerable<T>` |
 | **Asynchronously** | `Task<T>` | `IObservable<T>` |
+
+---
 
 Reactive Extensions do not provide new concepts,<br>
 but rather new view on old ones.
@@ -789,6 +793,8 @@ but rather new view on old ones.
 Let's assume there is a form:
 
 ![WordList](images/wordlist.png)
+
+---
 
 ```csharp
 // This interface is demonstration purposes only
@@ -904,6 +910,8 @@ textChanges // IObservable<string>
     .Subscribe(LoadWords);
 ```
 
+---
+
 Pairwise (Let/Zip?)
 TakeUntil (Lapsed listener)
 
@@ -942,12 +950,6 @@ public void LongRunningOperation(IObservable<bool> debugStream) {
     }
 }
 ```
-
-
-
-```
-
-
 
 ***
 
