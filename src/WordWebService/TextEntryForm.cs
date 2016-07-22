@@ -31,6 +31,7 @@ namespace WordWebService
 		private void LoadWords(string[] items)
 		{
 			list.Items.Clear();
+			// ReSharper disable once CoVariantArrayConversion
 			list.Items.AddRange(items);
 		}
 	}

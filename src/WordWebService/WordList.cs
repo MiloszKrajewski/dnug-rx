@@ -61,7 +61,7 @@ namespace WordWebService
 			var result = _words.Where(w => w.StartsWith(prefix)).ToArray();
 			Console.WriteLine("{0:u} [{1}] sleep", DateTime.Now, prefix);
 
-			for (int i = 1; i <= 5; i++)
+			for (var i = 1; i <= 5; i++)
 			{
 				await Task.Delay(ONE_SEC);
 				Console.WriteLine("{0:u} [{1}] {2}s", DateTime.Now, prefix, i);
