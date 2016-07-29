@@ -22,8 +22,7 @@ namespace WordWebService
 			textChanges
 				.Throttle(TimeSpan.FromMilliseconds(500))
 				.DistinctUntilChanged()
-				.Select(WordList.FetchAsync)
-				.Switch()
+				.SelectLatest(WordList.FetchAsyncWithCancel)
 				.ObserveOn(this)
 				.Subscribe(LoadWords);
 		}

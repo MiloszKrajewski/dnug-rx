@@ -761,7 +761,8 @@ task.ContinueWith(
     TaskContinuationOptions.OnlyOnRanToCompletion);
 ```
 
-When `task` finishes it does not deliver value, it calls continuation with information saying "yup, it's finished".
+When `task` finishes it does not deliver value,<br>
+it calls continuation with information saying "yup, it's finished".
 
 ---
 
@@ -814,6 +815,8 @@ There's also a service allowing to fetch suggestions:
 public interface IWordListService {
     string[] Fetch(string prefix); // string[]
     Task<string[]> FetchAsync(string prefix); // Task<string[]>
+    Task<string[]> FetchAsyncWithCancel(
+        string prefix, CancellationToken token); // Task<string[]>
 }
 ```
 
@@ -906,6 +909,37 @@ textChanges // IObservable<string>
     .DistinctUntilChanged()
     .Select(WordList.FetchAsync) // IObservable<Task<string[]>>
     .Switch() // IObservable<string[]>
+    .ObserveOn(this)
+    .Subscribe(LoadWords);
+```
+
+---
+
+`Switch` is taking **last** result but it doen't **cancel** previous ones.<br>
+Let's add some extension method:
+
+```csharp
+public static IObservable<U> SelectLatest<T, U>(
+    this IObservable<T> observable,
+    Func<T, CancellationToken, Task<U>> selector)
+{
+    return observable
+        .Select(item => Observable.FromAsync(
+            token => selector(item, token)))
+        .Switch();
+}
+```
+
+---
+
+So the final implementation is:
+
+```csharp
+textChanges // IObservable<string>
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .DistinctUntilChanged()
+    .SelectLatest(WordList.FetchAsyncWithCancel) 
+    // IObservable<string[]>
     .ObserveOn(this)
     .Subscribe(LoadWords);
 ```
