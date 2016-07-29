@@ -183,7 +183,7 @@ public static class EventExtensions {
 class Emitter {
     public event EventHandler<int> Changed;
     public void OnChanged(int newValue) {
-        handler.Raise(this, newValue);
+        Changed.Raise(this, newValue);
     }
 }
 ```
