@@ -30,7 +30,7 @@ namespace WordWebService.Tests
 				.Subscribe(_words);
 		}
 
-		public IObserver<string> Text => _text;
-		public IObservable<string[]> Words => _words;
+		public IObserver<string> Text { get { return _text; } }
+		public IObservable<string[]> Words { get { return _words; } }
 	}
 }

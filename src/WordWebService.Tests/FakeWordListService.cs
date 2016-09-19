@@ -32,6 +32,6 @@ namespace WordWebService.Tests
 			return Observable.Return(result).Delay(_delay, _scheduler);
 		}
 
-		public IList<Timestamped<string>> History => _history;
+		public IList<Timestamped<string>> History { get { return _history; } }
 	}
 }
