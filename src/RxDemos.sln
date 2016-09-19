@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordWebService", "WordWebService\WordWebService.csproj", "{44D34BF7-814A-4C9B-8919-7BED51DDDED8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObservableNetwork", "ObservableNetwork\ObservableNetwork.csproj", "{AB2BF70D-8216-4A33-A510-20FECB52C55C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paint", "Paint\Paint.csproj", "{673BF26E-26AC-4671-A0C6-EB67C12B93AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReactiveMQ", "ReactiveMQ\ReactiveMQ.csproj", "{3BFD99C9-9DAE-4AF6-84A7-B3A3A90A4E7C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordWebService.Tests", "WordWebService.Tests\WordWebService.Tests.csproj", "{088884B3-552A-4D90-8DB5-33328714AF1A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryMonitoring", "RegistryMonitoring\RegistryMonitoring.csproj", "{EF75AECD-A3B5-42D6-8BD0-08D944D81C57}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +23,22 @@ Global
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44D34BF7-814A-4C9B-8919-7BED51DDDED8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB2BF70D-8216-4A33-A510-20FECB52C55C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{673BF26E-26AC-4671-A0C6-EB67C12B93AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{673BF26E-26AC-4671-A0C6-EB67C12B93AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{673BF26E-26AC-4671-A0C6-EB67C12B93AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{673BF26E-26AC-4671-A0C6-EB67C12B93AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BFD99C9-9DAE-4AF6-84A7-B3A3A90A4E7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BFD99C9-9DAE-4AF6-84A7-B3A3A90A4E7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BFD99C9-9DAE-4AF6-84A7-B3A3A90A4E7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BFD99C9-9DAE-4AF6-84A7-B3A3A90A4E7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{088884B3-552A-4D90-8DB5-33328714AF1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{088884B3-552A-4D90-8DB5-33328714AF1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{088884B3-552A-4D90-8DB5-33328714AF1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{088884B3-552A-4D90-8DB5-33328714AF1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF75AECD-A3B5-42D6-8BD0-08D944D81C57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF75AECD-A3B5-42D6-8BD0-08D944D81C57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF75AECD-A3B5-42D6-8BD0-08D944D81C57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF75AECD-A3B5-42D6-8BD0-08D944D81C57}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

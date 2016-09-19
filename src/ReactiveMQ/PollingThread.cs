@@ -7,7 +7,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using ZMQ;
 
-namespace ObservableNetwork
+namespace ReactiveMQ
 {
 	public class PollingThread : IDisposable
 	{
@@ -34,7 +34,7 @@ namespace ObservableNetwork
 			_polls.Add(Guid.NewGuid(), PollAndIgnore(_wake));
 			_poke.Connect(Transport.INPROC, _guid);
 			_cancel = new CancellationTokenSource();
-			_thread = new Thread(() => Loop(_cancel.Token));
+			_thread = new Thread(() => Loop(_cancel.Token)) { IsBackground = true };
 			_thread.Start();
 		}
 
@@ -69,25 +69,22 @@ namespace ObservableNetwork
 			_poke.Send();
 		}
 
-		public IObservable<byte[]> Observe(Socket socket)
+		public Action Poll(Socket socket, Action<byte[]> receive)
 		{
-			return Observable.Create<byte[]>(o => {
-				var guid = Guid.NewGuid();
-				var poll = Register(guid, socket);
-				poll.PollInHandler += (s, e) => o.OnNext(s.Recv());
-				poll.PollErrHandler += (s, e) => o.OnError(new IOException());
-				return () => Unregister(guid);
-			}).Publish().RefCount();
+			var guid = Register(socket, receive);
+			return () => Unregister(guid);
 		}
 
-		private PollItem Register(Guid guid, Socket socket)
+		private Guid Register(Socket socket, Action<byte[]> receive)
 		{
+			var guid = Guid.NewGuid();
 			var poll = socket.CreatePollItem(IOMultiPlex.POLLIN | IOMultiPlex.POLLERR);
+			poll.PollInHandler += (s, e) => receive(s.Recv());
 			Enqueue(() => {
 				_polls.Add(guid, poll);
 				_items = null;
 			});
-			return poll;
+			return guid;
 		}
 
 		private void Unregister(Guid guid)
