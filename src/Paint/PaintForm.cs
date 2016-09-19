@@ -40,25 +40,28 @@ namespace Paint
 				Observable.FromEventPattern<MouseEventArgs>(panel, "MouseDown")
 				.Select(ep => ep.EventArgs);
 
-			PublishButton.Click += (s, e) => {
-				PublishButton.Enabled = SubscribeButton.Enabled = false;
-				var mouseEvents = mouseMove.Merge(mouseDown).Merge(mouseUp);
-				ObservableMQ.Publish(
-					mouseEvents
-					.Select(JsonConvert.SerializeObject)
-					.Select(Encoding.UTF8.GetBytes),
-					4444);
-				WireMouse(mouseEvents, segments);
-			};
+			var mouseEvents = mouseMove.Merge(mouseDown).Merge(mouseUp);
+			WireMouse(mouseEvents, segments);
 
-			SubscribeButton.Click += (s, e) => {
-				PublishButton.Enabled = SubscribeButton.Enabled = false;
-				var mouseEvents =
-					ObservableMQ.Subscribe(IPAddress.Loopback, 4444)
-					.Select(Encoding.UTF8.GetString)
-					.Select(JsonConvert.DeserializeObject<MouseEventArgs>);
-				WireMouse(mouseEvents, segments);
-			};
+			//PublishButton.Click += (s, e) => {
+			//	PublishButton.Enabled = SubscribeButton.Enabled = false;
+			//	var mouseEvents = mouseMove.Merge(mouseDown).Merge(mouseUp);
+			//	ObservableMQ.Publish(
+			//		mouseEvents
+			//		.Select(JsonConvert.SerializeObject)
+			//		.Select(Encoding.UTF8.GetBytes),
+			//		4444);
+			//	WireMouse(mouseEvents, segments);
+			//};
+
+			//SubscribeButton.Click += (s, e) => {
+			//	PublishButton.Enabled = SubscribeButton.Enabled = false;
+			//	var mouseEvents =
+			//		ObservableMQ.Subscribe(IPAddress.Loopback, 4444)
+			//		.Select(Encoding.UTF8.GetString)
+			//		.Select(JsonConvert.DeserializeObject<MouseEventArgs>);
+			//	WireMouse(mouseEvents, segments);
+			//};
 		}
 
 		private void RedrawSegments(Graphics gc, Pen pen, IEnumerable<Point[]> segments)
