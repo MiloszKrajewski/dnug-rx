@@ -944,11 +944,186 @@ textChanges // IObservable<string>
     .Subscribe(LoadWords);
 ```
 
+***
+
+## Observables as Networking and Persistence model
+
 ---
 
-Pairwise (Let/Zip?)
-TakeUntil (Lapsed listener)
+To write little *Paint* application<br>
+we need and *output*:
 
+```csharp
+private static void PaintSegments(Graphics gc, Pen pen, IEnumerable<Point[]> segments)
+{
+    foreach (var segment in segments)
+        gc.DrawLine(pen, segment[0], segment[1]);
+}
+```
+
+---
+
+...and *input*, which is mouse moves and button presses,<br> 
+merged into long stream of events, so they can be easily passed around:
+
+```csharp
+private IObservable<MouseEventArgs> MouseEvents()
+{
+    var mouseMove =
+        Observable.FromEventPattern<MouseEventArgs>(panel, "MouseMove")
+            .Select(ep => ep.EventArgs);
+
+    var mouseUp =
+        Observable.FromEventPattern<MouseEventArgs>(panel, "MouseUp")
+            .Select(ep => ep.EventArgs);
+
+    var mouseDown =
+        Observable.FromEventPattern<MouseEventArgs>(panel, "MouseDown")
+            .Select(ep => ep.EventArgs);
+
+    return mouseMove.Merge(mouseDown).Merge(mouseUp);
+}
+```
+
+---
+
+There is an impedance between input model (`IObservable<MouseEventsArgs>`)<br>
+and output model (`IEnumerable<Point[]>`), so we need to convert.
+
+```csharp
+private static IObservable<Point[]> MouseToSegments(
+    IObservable<MouseEventArgs> mouseEvents)
+{
+    //...
+}
+```
+
+---
+
+We may need to split events into multiple streams again:
+
+```csharp
+var mouseDown = mouseEvents // IObservable<Button>
+    .Select(e => e.Button & MouseButtons.Left)
+    .Where(b => b != MouseButtons.None)
+    .DistinctUntilChanged();
+```
+
+---
+
+```csharp
+var mouseMove = mouseEvents // IObservable<Point>
+    .Select(e => e.Location)
+    .DistinctUntilChanged();
+```
+
+---
+
+```csharp
+var mouseUp = mouseEvents // IObservable<Button>
+    .SkipUntil(mouseDown) // don't worry about mouseup before mouse downs
+    .Select(e => e.Button & MouseButtons.Left)
+    .Where(b => b == MouseButtons.None)
+    .DistinctUntilChanged();
+```
+
+---
+
+```csharp
+return mouseMove // IObservable<Point>
+    .SkipUntil(mouseDown) // ignore until mouse down
+    .Pairwise() // IObservable<Point[]>
+    .TakeUntil(mouseUp) // take until mouse up
+    .Repeat(); // start again
+```
+
+---
+
+Conversion from `IObservable<Point[]>` to `IEnumerable<Point[]>` is constrained by toolkit,<br> 
+as it actually enforces `IObservable<IEnumerable<Point[]>>`:
+
+```csharp
+private void AttachPainter(IObservable<Point[]> segments, Color color)
+{
+    var pen = new Pen(color, 6);
+    var queue = new ConcurrentQueue<Point[]>();
+
+    panel.Paint += (s, e) => PaintSegments(e.Graphics, pen, queue);
+
+    segments
+        .Do(queue.Enqueue)
+        .Sample(Framerate) // limit framerate
+        .ObserveOn(this) // synchronise to GUI thread
+        .Subscribe(_ => panel.Invalidate());
+}
+```
+
+---
+
+## Networking
+
+---
+
+Having any mechanism to publish `byte[]` packets, we publish our events:
+
+```csharp
+private static void AttachPublisher(IObservable<Point[]> segments)
+{
+    ObservableMQ.Publish(
+        segments
+            .ObserveOn(TaskPoolScheduler.Default)
+            .Select(JsonConvert.SerializeObject)
+            .Select(Encoding.UTF8.GetBytes),
+        Port);
+}
+```
+
+---
+
+...and subscribe to them:
+
+```csharp
+private void AttachSubscriber(Color color)
+{
+    var externalEvents =
+        ObservableMQ.Subscribe(Address, Port)
+            .Select(Encoding.UTF8.GetString)
+            .Select(JsonConvert.DeserializeObject<Point[]>);
+
+    AttachPainter(externalEvents, color);
+}
+```
+
+---
+
+## Persistence
+
+---
+
+```csharp
+private static IEnumerable<Point[]> RestoreSegments(string fileName)
+{
+    return !File.Exists(fileName)
+        ? Enumerable.Empty<Point[]>()
+        : File.ReadAllLines(fileName).Select(JsonConvert.DeserializeObject<Point[]>);
+}
+```
+
+---
+
+```csharp
+private static void AttachPersister(string fileName, IObservable<Point[]> segments)
+{
+    segments
+        .Select(JsonConvert.SerializeObject)
+        .Buffer(TimeSpan.FromSeconds(1)) // write in blocks
+        .Subscribe(ll => File.AppendAllLines(fileName, ll));
+}
+```
+
+***
+
+## Dependency injection
 
 ---
 
@@ -984,6 +1159,56 @@ public void LongRunningOperation(IObservable<bool> debugStream) {
     }
 }
 ```
+
+***
+
+## Live diff
+
+```csharp
+var fileName = "textfile.txt";
+
+var empty = Observable.Return(string.Empty);
+
+var content =
+    Observable.Interval(TimeSpan.FromSeconds(1))
+    .Select(_ => File.Exists(fileName)).Where(e => e)
+    .Select(_ => File.ReadAllText(fileName));
+
+var diffs = empty.Concat(content).Pairwise().SelectMany(Diff);
+
+diffs.Subscribe(Console.WriteLine);
+
+Console.ReadLine();
+```
+
+***
+
+## Pairwise
+
+```csharp
+public static IObservable<T[]> Pairwise<T>(this IObservable<T> observable)
+{
+    return Observable.Create<T[]>(observer => {
+        var prev = default(T);
+        var initialized = false;
+        return observable.Subscribe(
+            next => {
+                if (initialized) observer.OnNext(new[] { prev, next });
+                initialized = true;
+                prev = next;
+            },
+            observer.OnError,
+            observer.OnCompleted);
+    });
+}
+```
+
+***
+
+Other topics:
+* Hot and Cold observables
+* Schedulers / Virtual time
+* INotifyProperyChanged / RxUI
 
 ***
 
