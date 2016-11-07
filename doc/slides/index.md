@@ -25,6 +25,10 @@
 
 ***
 
+### Rx.NET, RxJava, RxJS, RxCpp, RxLua, RxScala, RxKotlin, RxGroovy, RxClojure, RxSwift, RxPHP, RxPython, RxRuby, RxRust, RxGo, RxJavaFX, RxSwing, RxNetty, RxAndroid, ReactiveUI
+
+***
+
 ### Familiar != Easy != Simple
 
 * Polish is neither **easy** nor **simple**, but for some people is **familiar**
@@ -456,12 +460,6 @@ public class Player {
 ```
 
 ...implemented with `Subscribe(...)` using (implicit) `IObserver<T>`.
-
----
-
-### Yes, I know
-
-We did not address **Lapsed listener problem**. It's easy but not for free. Be patient.
 
 ***
 
@@ -954,7 +952,8 @@ To write little *Paint* application<br>
 we need and *output*:
 
 ```csharp
-private static void PaintSegments(Graphics gc, Pen pen, IEnumerable<Point[]> segments)
+private static void PaintSegments(
+    Graphics gc, Pen pen, IEnumerable<Point[]> segments)
 {
     foreach (var segment in segments)
         gc.DrawLine(pen, segment[0], segment[1]);
@@ -1009,7 +1008,11 @@ var mouseDown = mouseEvents // IObservable<Button>
     .DistinctUntilChanged();
 ```
 
+...mouse downs...
+
 ---
+
+...mouse moves...
 
 ```csharp
 var mouseMove = mouseEvents // IObservable<Point>
@@ -1018,6 +1021,8 @@ var mouseMove = mouseEvents // IObservable<Point>
 ```
 
 ---
+
+...and mouse ups...
 
 ```csharp
 var mouseUp = mouseEvents // IObservable<Button>
@@ -1029,6 +1034,8 @@ var mouseUp = mouseEvents // IObservable<Button>
 
 ---
 
+...then combine them all...
+
 ```csharp
 return mouseMove // IObservable<Point>
     .SkipUntil(mouseDown) // ignore until mouse down
@@ -1039,8 +1046,7 @@ return mouseMove // IObservable<Point>
 
 ---
 
-Conversion from `IObservable<Point[]>` to `IEnumerable<Point[]>` is constrained by toolkit,<br> 
-as it actually enforces `IObservable<IEnumerable<Point[]>>`:
+Painting is constrained by GUI toolkit:
 
 ```csharp
 private void AttachPainter(IObservable<Point[]> segments, Color color)
@@ -1054,15 +1060,14 @@ private void AttachPainter(IObservable<Point[]> segments, Color color)
         .Do(queue.Enqueue)
         .Sample(Framerate) // limit framerate
         .ObserveOn(this) // synchronise to GUI thread
+        // .Subscribe(_ => Paint(queue))
         .Subscribe(_ => panel.Invalidate());
 }
 ```
 
 ---
 
-## Networking
-
----
+### Networking
 
 Having any mechanism to publish `byte[]` packets, we publish our events:
 
@@ -1096,23 +1101,13 @@ private void AttachSubscriber(Color color)
 
 ---
 
-## Persistence
+### Persistence
 
----
-
-```csharp
-private static IEnumerable<Point[]> RestoreSegments(string fileName)
-{
-    return !File.Exists(fileName)
-        ? Enumerable.Empty<Point[]>()
-        : File.ReadAllLines(fileName).Select(JsonConvert.DeserializeObject<Point[]>);
-}
-```
-
----
+Persisting objects:
 
 ```csharp
-private static void AttachPersister(string fileName, IObservable<Point[]> segments)
+private static void AttachPersister(
+    string fileName, IObservable<Point[]> segments)
 {
     segments
         .Select(JsonConvert.SerializeObject)
@@ -1121,9 +1116,23 @@ private static void AttachPersister(string fileName, IObservable<Point[]> segmen
 }
 ```
 
+---
+
+Loading persisted objects back:
+
+```csharp
+private static IEnumerable<Point[]> RestoreSegments(string fileName)
+{
+    return !File.Exists(fileName)
+        ? Enumerable.Empty<Point[]>()
+        : File.ReadAllLines(fileName)
+            .Select(JsonConvert.DeserializeObject<Point[]>);
+}
+```
+
 ***
 
-## Dependency injection
+## Event injection
 
 ---
 
