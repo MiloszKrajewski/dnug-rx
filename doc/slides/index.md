@@ -321,6 +321,8 @@ when reading between the lines we get:
 
 ![Everything](images/everything.png)
 
+---
+
 ***
 
 ### Rx observables are like events<br>(and GoF subjects)
@@ -429,11 +431,12 @@ public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 
 ---
 
-### 3 kinds of subjects
+### 4 kinds of subjects
 
 * `PublishSubject<T>` / `Subject<T>`
 * `BehaviourSubject<T>`
 * `ReplaySubject<T>`
+* `AsyncSubject<T>`
 
 ---
 
@@ -537,6 +540,15 @@ public class Player {
 ```
 
 ...implemented with `Subscribe(...)` using (implicit) `IObserver<T>`.
+
+---
+
+| `EventHandler<Args>` | `IObservable<T>`              |
+|:--------------------:|:-----------------------------:|
+| event += handler     | observable.Subscribe(handler) |
+| event -= handler     | IDisposable                   |
+| event()              | subject.OnNext()              |
+| handler              | observable.Subscribe(handler) |
 
 ***
 
@@ -801,8 +813,8 @@ return Observable.Create(output => {
 | `IEnumerable<T>` | `IObservable<T>`    |
 |:----------------:|:-------------------:|
 | yield return i   | output.OnNext(i)    |
-| yield break      | output.OnComplete() |
 | throw e          | output.OnError(e)   |
+| yield break      | output.OnComplete() |
 
 ***
 
@@ -875,6 +887,14 @@ it calls `OnComplete()` for all subscribers when sequence is finished.
 ***
 
 `Observables` share characteristics of both `Promises` and `Sequences`.
+
+---
+
+| `Task<T>`         | `IObservable<T>`    |
+|:-----------------:|:-------------------:|
+| t.Result          | output.OnNext(i)    |
+| t.Exception       | output.OnError(e)   |
+| t.AsyncWaitHandle | output.OnComplete() |
 
 ---
 
