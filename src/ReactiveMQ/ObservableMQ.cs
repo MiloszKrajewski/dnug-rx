@@ -15,7 +15,7 @@ namespace ReactiveMQ
 		public static IDisposable Publish(IObservable<byte[]> observable, int port)
 		{
 			var socket = Context.Socket(SocketType.PUB);
-			socket.Bind(Transport.TCP, string.Format("*:{0}", port));
+			socket.Bind(Transport.TCP, $"*:{port}");
 			return observable.Subscribe(
 				d => socket.Send(d),
 				e => socket.Dispose(),
@@ -25,7 +25,7 @@ namespace ReactiveMQ
 		public static IObservable<byte[]> Subscribe(IPAddress address, int port)
 		{
 			var socket = Context.Socket(SocketType.SUB);
-			socket.Connect(Transport.TCP, string.Format("{0}:{1}", address, port));
+			socket.Connect(Transport.TCP, $"{address}:{port}");
 			socket.Subscribe(AllSubjects);
 			return Observable.Create<byte[]>(
 				emitter => Poller.Poll(socket, emitter.OnNext)

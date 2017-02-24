@@ -17,15 +17,80 @@
 ### About me
 
 - Milosz Krajewski
-- BLOBAs @ Sepura
-- self proclaimed FRP evangelist
+- Full-stack @ Reckon
 - first line of code written in ~1984
-- C, C++, C#, SQL, Java, Delphi
-- (Iron)Python, F#, Scala, Kotlin
+- C#, SQL, ES6
+- Python, F#, Kotlin, Scala
+- C/C++
 
 ***
 
-### Rx.NET, RxJava, RxJS, RxCpp, RxLua, RxScala, RxKotlin, RxGroovy, RxClojure, RxSwift, RxPHP, RxPython, RxRuby, RxRust, RxGo, RxJavaFX, RxSwing, RxNetty, RxAndroid, ReactiveUI
+### http://reactivex.io
+
+**Bart de Smet** @ DevCamp 2010<br>
+"Rx: Curing your asynchronous programming blues"<br>
+http://bit.ly/1qsXfsx
+
+**Mike Taulty** @ DevDays 2011<br>
+"Reactive Extensions for .NET for the Rest of Us"<br>
+http://bit.ly/1PSoukV
+
+***
+
+### Free lunch is over
+
+![cpu](images/cpu-speed.png)
+
+---
+
+### C10k
+
+* lighttpd, nginx, twisted, node (*)
+* actors
+* async / await
+* reactive extensions
+* erlang / OTP
+* WhatsApp (C2M @ 2010)
+
+---
+
+### Node ?
+
+![bodil](images/bodil-node.png)
+
+---
+
+### What it does?
+
+```csharp
+var counter = 0;
+for (var i = 0; i < 10000; i++) {
+    new Thread(() => Interlocked.Increment(ref counter)).Start();
+}
+```
+
+---
+
+### ...and this?
+
+```csharp
+for (var i = 0; i < 10000; i++) {
+    Task.Run(() => Interlocked.Increment(ref counter));
+}
+```
+
+***
+
+### Platforms
+
+* Rx.NET, ReactiveUI (WinForms, WPF, Xamarin)
+* RxJava, RxScala, RxKotlin, RxGroovy, RxClojure, RxJavaFX, RxSwing, RxNetty, RxAndroid
+* RxJS, RxLua, RxPython, RxRuby
+* RxCpp, RxSwift, RxPHP, RxRust, RxGo
+
+---
+
+![companies](images/reactivex-companies.png)
 
 ***
 
@@ -38,6 +103,8 @@
 
 Reactive programming is **simple** but not **easy**.<br>
 It's worth to make it **familiar**.
+
+(Reactive Extensions are great it's just me...)
 
 ***
 
@@ -357,6 +424,16 @@ public interface IObservable<T> {
 
 public interface ISubject<T>: IObservable<T>, IObserver<T> { }
 ```
+
+(it covers GoF Subject with 3 methods, and Observer with 1 method)
+
+---
+
+### 3 kinds of subjects
+
+* `PublishSubject<T>` / `Subject<T>`
+* `BehaviourSubject<T>`
+* `ReplaySubject<T>`
 
 ---
 
@@ -693,6 +770,34 @@ use `Observable.Create(...)` instead)
 
 ---
 
+```csharp
+return Observable.Create(output => {
+    /* constructor */
+    return () => { /* destructor */ }
+});
+```
+
+---
+
+```csharp
+public static IObservable<R> Select<T, R>(
+    this IObservable<T> input, Func<T, R> selector)
+{
+    return Observable.Create(output => {
+        var subscription = input.Subscribe(v => output.OnNext(selector(v)));
+        return () => subscription.Dispose();
+    });
+}
+```
+
+```csharp
+return Observable.Create(output => {
+    return input.Subscribe(v => output.OnNext(selector(v)));
+});
+```
+
+---
+
 | `IEnumerable<T>` | `IObservable<T>`    |
 |:----------------:|:-------------------:|
 | yield return i   | output.OnNext(i)    |
@@ -940,6 +1045,147 @@ textChanges // IObservable<string>
     // IObservable<string[]>
     .ObserveOn(this)
     .Subscribe(LoadWords);
+```
+
+***
+
+## Testing interactions in virtual time
+
+* `ISheduler` / `HistoricalScheduler`
+* `ReplaySubject<T>` 
+* `output.Timestamped().Subscribe(e => el.Add(e))`
+
+---
+
+```csharp
+[Test]
+public void WhenUserStopsTypingCallIsMade()
+{
+    _viewModel.Text.OnNext("d");
+    _scheduler.AdvanceBy(TimeSpan.FromSeconds(0.4));
+    _viewModel.Text.OnNext("de");
+    _scheduler.AdvanceBy(TimeSpan.FromSeconds(0.4));
+    _viewModel.Text.OnNext("den");
+    _scheduler.AdvanceBy(TimeSpan.FromSeconds(0.4));
+    _viewModel.Text.OnNext("denv");
+    _scheduler.AdvanceBy(TimeSpan.FromSeconds(0.4));
+
+    Assert.AreEqual(0, _service.History.Count);
+
+    _scheduler.AdvanceBy(TimeSpan.FromSeconds(0.2));
+
+    Assert.AreEqual(1, _service.History.Count);
+    Assert.AreEqual("denv", _service.History.First().Value);
+}
+```
+
+***
+
+### Spot the Pattern
+
+---
+
+```csharp
+class Socket {
+    void Send(byte[] message);
+    IObservable<byte[]> Observe();
+}
+```
+
+```csharp
+class Server {
+    IObservable<Socket> Listen(int port);
+}
+```
+
+```csharp
+class Client {
+    IObservable<Socket> Connect(IPAddress host, int port);
+}
+```
+
+---
+
+```csharp
+class MessageBus {
+    void Publish(object message);
+    IObservable<T> Subscribe<T>();
+}
+```
+
+---
+
+```csharp
+class MessageQueue {
+    void Send(T message);
+    IObservable<T> Observe();
+}
+```
+
+---
+
+```csharp
+public void Slideshow(string folder) {
+    Observable
+        .Interval(TimeSpan.FromSeconds(5))
+        .Merge(keyboard.Where(key => key == ' '))
+        .Zip(EnumerateImages(folder))
+        .Subscribe(image => screen.Image = image);
+}
+```
+
+---
+
+```csharp
+public void Pull<T>(
+    this IQueue<T> queue, IObserver<T> observer) 
+{
+    new Thread(() => {
+        while (true) observer.OnNext(queue.Dequeue());
+    }).Start();
+}
+```
+
+---
+
+```csharp
+public IObservable<T> Observe(this IQueue<T> queue) {
+    return Observable.Create(output => {
+        var cancel = new CancellationTokenSource();
+        new Thread(() => {
+            while (true) {
+                cancel.Token.ThrowIfCancellationRequested();
+                observer.OnNext(queue.Dequeue(cancel.Token));
+            }
+        }).Start();
+        return () => cancel.Cancel();
+    });
+}
+```
+
+---
+
+```csharp
+public void Process<T>(this IObservable<T> observable) {
+    var queue = new Queue<T>(); // thread-safe one
+    observable.Subscribe(item => queue.Enqueue(item));
+    new Thread(() => {
+        while (true) {
+            var item = queue.Dequeue();
+            // ...do stuff...
+        }
+    }).Start();
+}
+```
+
+---
+
+```csharp
+public class CancellationTokenSource {
+    ISubject<bool> _token = new BehaviourSubject<bool>(false);
+    IObservable<bool> Token { get { return _token; } }
+    void Cancel() { _token.OnNext(true); }
+}
 ```
 
 ***
@@ -1221,12 +1467,3 @@ Other topics:
 
 ***
 
-### http://reactivex.io
-
-**Bart de Smet** @ DevCamp 2010<br>
-"Rx: Curing your asynchronous programming blues"<br>
-http://bit.ly/1qsXfsx
-
-**Mike Taulty** @ DevDays 2011<br>
-"Reactive Extensions for .NET for the Rest of Us"<br>
-http://bit.ly/1PSoukV
